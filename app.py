@@ -349,6 +349,110 @@ def dashboard():
                          sina_quote=sina_data['quote'],
                          sina_tone=sina_data['tone'])
 
+@app.route('/tasks')
+@login_required
+def tasks():
+    user_id = session['user_id']
+    conn = sqlite3.connect('instance/sina.db')
+    cursor = conn.cursor()
+    
+    # Get all tasks for the user
+    cursor.execute('''
+        SELECT id, title, description, priority, category, deadline, completed, created_at, completed_at
+        FROM tasks 
+        WHERE user_id = ? 
+        ORDER BY 
+            completed ASC,
+            CASE priority 
+                WHEN 'high' THEN 1 
+                WHEN 'medium' THEN 2 
+                WHEN 'low' THEN 3 
+            END,
+            deadline ASC,
+            created_at DESC
+    ''', (user_id,))
+    
+    tasks_data = cursor.fetchall()
+    
+    # Convert to objects for easier template access
+    tasks = []
+    for task_data in tasks_data:
+        task = {
+            'id': task_data[0],
+            'title': task_data[1],
+            'description': task_data[2],
+            'priority': task_data[3],
+            'category': task_data[4],
+            'deadline': datetime.strptime(task_data[5], '%Y-%m-%d %H:%M:%S') if task_data[5] else None,
+            'completed': task_data[6],
+            'created_at': datetime.strptime(task_data[7], '%Y-%m-%d %H:%M:%S'),
+            'completed_at': datetime.strptime(task_data[8], '%Y-%m-%d %H:%M:%S') if task_data[8] else None
+        }
+        tasks.append(task)
+    
+    # Calculate statistics
+    total_tasks = len(tasks)
+    completed_tasks = len([t for t in tasks if t['completed']])
+    pending_tasks = len([t for t in tasks if not t['completed']])
+    
+    now = datetime.now()
+    overdue_tasks = len([t for t in tasks if not t['completed'] and t['deadline'] and t['deadline'] < now])
+    
+    conn.close()
+    
+    return render_template('tasks.html',
+                         tasks=tasks,
+                         total_tasks=total_tasks,
+                         completed_tasks=completed_tasks,
+                         pending_tasks=pending_tasks,
+                         overdue_tasks=overdue_tasks,
+                         now=now)
+
+@app.route('/focus')
+@login_required
+def focus():
+    user_id = session['user_id']
+    conn = sqlite3.connect('instance/sina.db')
+    cursor = conn.cursor()
+    
+    # Get today's session stats
+    today = datetime.now().date()
+    cursor.execute('''
+        SELECT COUNT(*), COALESCE(SUM(duration), 0) FROM focus_sessions 
+        WHERE user_id = ? AND DATE(session_date) = ?
+    ''', (user_id, today))
+    session_data = cursor.fetchone()
+    today_sessions = session_data[0]
+    today_minutes = session_data[1]
+    
+    # Get recent sessions
+    cursor.execute('''
+        SELECT fs.duration, fs.notes, fs.session_date, t.title as task_title
+        FROM focus_sessions fs
+        LEFT JOIN tasks t ON fs.task_id = t.id
+        WHERE fs.user_id = ?
+        ORDER BY fs.session_date DESC
+        LIMIT 10
+    ''', (user_id,))
+    
+    sessions_data = cursor.fetchall()
+    sessions = []
+    for session_data in sessions_data:
+        session = {
+            'duration': session_data[0],
+            'notes': session_data[1],
+            'session_date': datetime.strptime(session_data[2], '%Y-%m-%d %H:%M:%S'),
+            'task_title': session_data[3]
+        }
+        sessions.append(session)
+    
+    conn.close()
+    
+    return render_template('focus.html',
+                         today_sessions=today_sessions,
+                         today_minutes=today_minutes,
+                         sessions=sessions)
+
 # API Routes
 @app.route('/api/tasks/create', methods=['POST'])
 @login_required

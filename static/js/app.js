@@ -65,10 +65,29 @@ class SinaApp {
             checkbox.addEventListener('change', this.handleTaskCompletion.bind(this));
         });
 
-        // Add task button
+        // Add task buttons
         const addTaskBtn = document.querySelector('#add-task-btn');
+        const addFirstTaskBtn = document.querySelector('#add-first-task-btn');
+        
         if (addTaskBtn) {
             addTaskBtn.addEventListener('click', this.showAddTaskModal.bind(this));
+        }
+        
+        if (addFirstTaskBtn) {
+            addFirstTaskBtn.addEventListener('click', this.showAddTaskModal.bind(this));
+        }
+
+        // Quick action buttons
+        document.querySelectorAll('button').forEach(button => {
+            if (button.textContent.includes('Add New Task')) {
+                button.addEventListener('click', this.showAddTaskModal.bind(this));
+            }
+        });
+
+        // Journal save button
+        const saveJournalBtn = document.querySelector('#save-journal-btn');
+        if (saveJournalBtn) {
+            saveJournalBtn.addEventListener('click', this.handleJournalSave.bind(this));
         }
 
         // Task priority changes
@@ -147,6 +166,19 @@ class SinaApp {
         this.saveJournalEntry(content);
     }
 
+    handleJournalSave(event) {
+        event.preventDefault();
+        const textarea = document.querySelector('#journal-textarea');
+        const content = textarea.value;
+        
+        if (content.trim().length < 10) {
+            this.notifications.show('Sina encourages more thoughtful reflection. Write at least 10 characters.', 'error');
+            return;
+        }
+        
+        this.saveJournalEntry(content);
+    }
+
     handlePriorityChange(event) {
         const select = event.target;
         const taskId = select.dataset.taskId;
@@ -204,7 +236,10 @@ class SinaApp {
         .then(data => {
             if (data.success) {
                 this.notifications.show('Journal entry saved. Sina appreciates your reflection.', 'success');
-                document.querySelector('#journal-textarea').value = '';
+                const textarea = document.querySelector('#journal-textarea');
+                if (textarea) {
+                    textarea.value = '';
+                }
             }
         })
         .catch(error => {
