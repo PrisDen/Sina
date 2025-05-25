@@ -422,9 +422,10 @@ def dashboard():
     
     # Get pending tasks
     cursor.execute('''
-        SELECT id, title, priority, category, deadline FROM tasks 
+        SELECT id, title, priority, category, deadline, in_progress FROM tasks 
         WHERE user_id = ? AND completed = FALSE 
         ORDER BY 
+            in_progress DESC,
             CASE priority 
                 WHEN 'high' THEN 1 
                 WHEN 'medium' THEN 2 
@@ -1089,6 +1090,135 @@ def api_check_deadlines():
         'overdue': overdue_tasks,
         'urgent': urgent_tasks
     })
+
+@app.route('/api/tasks/in-progress', methods=['POST'])
+@login_required
+def api_mark_task_in_progress():
+    data = request.get_json()
+    task_id = data['task_id']
+    user_id = session['user_id']
+    
+    try:
+        conn = sqlite3.connect('instance/sina.db')
+        cursor = conn.cursor()
+        
+        cursor.execute('''
+            UPDATE tasks SET in_progress = TRUE
+            WHERE id = ? AND user_id = ?
+        ''', (task_id, user_id))
+        
+        conn.commit()
+        conn.close()
+        
+        return jsonify({'success': True, 'message': 'Task marked as in progress'})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/api/tasks/<int:task_id>', methods=['GET'])
+@login_required
+def api_get_task(task_id):
+    user_id = session['user_id']
+    
+    try:
+        conn = sqlite3.connect('instance/sina.db')
+        cursor = conn.cursor()
+        
+        cursor.execute('''
+            SELECT id, title, description, priority, category, deadline, completed, in_progress
+            FROM tasks 
+            WHERE id = ? AND user_id = ?
+        ''', (task_id, user_id))
+        
+        task_data = cursor.fetchone()
+        conn.close()
+        
+        if task_data:
+            # Handle datetime formatting for frontend
+            deadline = task_data[5]
+            if deadline:
+                try:
+                    if 'T' in deadline:
+                        # Already in ISO format
+                        formatted_deadline = deadline
+                    else:
+                        # Convert SQLite format to ISO format for datetime-local input
+                        dt = datetime.strptime(deadline, '%Y-%m-%d %H:%M:%S')
+                        formatted_deadline = dt.strftime('%Y-%m-%dT%H:%M')
+                except:
+                    formatted_deadline = deadline
+            else:
+                formatted_deadline = ''
+            
+            task = {
+                'id': task_data[0],
+                'title': task_data[1],
+                'description': task_data[2],
+                'priority': task_data[3],
+                'category': task_data[4],
+                'deadline': formatted_deadline,
+                'completed': task_data[6],
+                'in_progress': task_data[7]
+            }
+            return jsonify(task)
+        else:
+            return jsonify({'error': 'Task not found'}), 404
+            
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/tasks/<int:task_id>', methods=['PUT'])
+@login_required
+def api_update_task(task_id):
+    data = request.get_json()
+    user_id = session['user_id']
+    
+    try:
+        conn = sqlite3.connect('instance/sina.db')
+        cursor = conn.cursor()
+        
+        cursor.execute('''
+            UPDATE tasks SET 
+                title = ?, 
+                description = ?, 
+                priority = ?, 
+                category = ?, 
+                deadline = ?
+            WHERE id = ? AND user_id = ?
+        ''', (data['title'], data.get('description', ''), 
+              data.get('priority', 'medium'), data.get('category', 'personal'),
+              data.get('deadline') if data.get('deadline') else None,
+              task_id, user_id))
+        
+        conn.commit()
+        conn.close()
+        
+        return jsonify({'success': True, 'message': 'Task updated successfully'})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/api/sessions/start', methods=['POST'])
+@login_required
+def api_start_focus_session():
+    data = request.get_json()
+    user_id = session['user_id']
+    
+    try:
+        conn = sqlite3.connect('instance/sina.db')
+        cursor = conn.cursor()
+        
+        # Log the session start (we'll update with actual duration when completed)
+        cursor.execute('''
+            INSERT INTO focus_sessions (user_id, task_id, duration, notes)
+            VALUES (?, ?, ?, ?)
+        ''', (user_id, data.get('task_id'), 0, data.get('notes', '')))
+        
+        session_id = cursor.lastrowid
+        conn.commit()
+        conn.close()
+        
+        return jsonify({'success': True, 'session_id': session_id, 'message': 'Focus session started'})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
 
 if __name__ == '__main__':
     # Ensure instance directory exists

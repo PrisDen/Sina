@@ -94,6 +94,16 @@ class SinaApp {
         document.querySelectorAll('.priority-select').forEach(select => {
             select.addEventListener('change', this.handlePriorityChange.bind(this));
         });
+
+        // Start focus session buttons
+        document.querySelectorAll('.start-focus-btn').forEach(button => {
+            button.addEventListener('click', this.handleStartFocus.bind(this));
+        });
+
+        // Edit task buttons
+        document.querySelectorAll('.edit-task-btn').forEach(button => {
+            button.addEventListener('click', this.handleEditTask.bind(this));
+        });
     }
 
     setupTimerHandlers() {
@@ -185,6 +195,26 @@ class SinaApp {
         const priority = select.value;
         
         this.updateTaskPriority(taskId, priority);
+    }
+
+    handleStartFocus(event) {
+        const button = event.target.closest('button');
+        const taskId = button.dataset.taskId;
+        const taskTitle = button.dataset.taskTitle;
+        
+        // Mark task as in progress
+        this.markTaskInProgress(taskId);
+        
+        // Start focus session for this task
+        this.startFocusSession(taskId, taskTitle);
+    }
+
+    handleEditTask(event) {
+        const button = event.target.closest('button');
+        const taskId = button.dataset.taskId;
+        
+        // Show edit task modal
+        this.showEditTaskModal(taskId);
     }
 
     completeTask(taskId) {
@@ -484,6 +514,216 @@ class SinaApp {
         })
         .catch(error => {
             console.error('Error checking deadlines:', error);
+        });
+    }
+
+    markTaskInProgress(taskId) {
+        fetch('/api/tasks/in-progress', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ task_id: taskId })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                this.notifications.show('Task marked as in progress. Sina is proud you\'re taking action!', 'info');
+                this.updateDashboardStats();
+            }
+        })
+        .catch(error => {
+            console.error('Error marking task in progress:', error);
+        });
+    }
+
+    startFocusSession(taskId, taskTitle) {
+        // Show focus session modal
+        const modal = document.createElement('div');
+        modal.className = 'fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50';
+        modal.innerHTML = `
+            <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+                <div class="mt-3">
+                    <h3 class="text-lg font-medium text-gray-900 mb-4">Start Focus Session</h3>
+                    <p class="text-sm text-gray-600 mb-4">Working on: <strong>${taskTitle}</strong></p>
+                    
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Session Duration (minutes)</label>
+                        <select id="session-duration" class="w-full p-2 border border-gray-300 rounded-md">
+                            <option value="25">25 minutes (Pomodoro)</option>
+                            <option value="15">15 minutes (Quick)</option>
+                            <option value="45">45 minutes (Deep Work)</option>
+                            <option value="60">60 minutes (Extended)</option>
+                        </select>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Notes (optional)</label>
+                        <textarea id="session-notes" rows="3" class="w-full p-2 border border-gray-300 rounded-md" placeholder="What will you focus on?"></textarea>
+                    </div>
+                    
+                    <div class="flex justify-end space-x-3">
+                        <button type="button" id="cancel-focus" class="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400">Cancel</button>
+                        <button type="button" id="start-focus" class="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700">Start Session</button>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(modal);
+        
+        // Handle start focus
+        modal.querySelector('#start-focus').addEventListener('click', () => {
+            const duration = parseInt(modal.querySelector('#session-duration').value);
+            const notes = modal.querySelector('#session-notes').value;
+            
+            // Set timer duration and start
+            this.timer.setDuration(duration);
+            this.timer.start();
+            
+            // Log session start
+            this.logFocusSessionStart(taskId, duration, notes);
+            
+            this.notifications.show(`Focus session started for ${duration} minutes. Sina believes in your discipline!`, 'success');
+            document.body.removeChild(modal);
+        });
+        
+        // Handle cancel
+        modal.querySelector('#cancel-focus').addEventListener('click', () => {
+            document.body.removeChild(modal);
+        });
+        
+        // Close on backdrop click
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                document.body.removeChild(modal);
+            }
+        });
+    }
+
+    showEditTaskModal(taskId) {
+        // Fetch task details first
+        fetch(`/api/tasks/${taskId}`)
+        .then(response => response.json())
+        .then(task => {
+            const modal = document.createElement('div');
+            modal.className = 'fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50';
+            modal.innerHTML = `
+                <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+                    <div class="mt-3">
+                        <h3 class="text-lg font-medium text-gray-900 mb-4">Edit Task</h3>
+                        <form id="edit-task-form">
+                            <div class="mb-4">
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Title</label>
+                                <input type="text" name="title" value="${task.title}" required class="w-full p-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500">
+                            </div>
+                            <div class="mb-4">
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Description</label>
+                                <textarea name="description" rows="3" class="w-full p-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500">${task.description || ''}</textarea>
+                            </div>
+                            <div class="mb-4">
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Priority</label>
+                                <select name="priority" class="w-full p-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500">
+                                    <option value="low" ${task.priority === 'low' ? 'selected' : ''}>Low</option>
+                                    <option value="medium" ${task.priority === 'medium' ? 'selected' : ''}>Medium</option>
+                                    <option value="high" ${task.priority === 'high' ? 'selected' : ''}>High</option>
+                                </select>
+                            </div>
+                            <div class="mb-4">
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Category</label>
+                                <select name="category" class="w-full p-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500">
+                                    <option value="personal" ${task.category === 'personal' ? 'selected' : ''}>Personal</option>
+                                    <option value="work" ${task.category === 'work' ? 'selected' : ''}>Work</option>
+                                    <option value="study" ${task.category === 'study' ? 'selected' : ''}>Study</option>
+                                    <option value="health" ${task.category === 'health' ? 'selected' : ''}>Health</option>
+                                </select>
+                            </div>
+                            <div class="mb-4">
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Deadline (optional)</label>
+                                <input type="datetime-local" name="deadline" value="${task.deadline || ''}" class="w-full p-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500">
+                            </div>
+                            <div class="flex justify-end space-x-3">
+                                <button type="button" id="cancel-edit" class="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400">Cancel</button>
+                                <button type="submit" class="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700">Update Task</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(modal);
+            
+            // Handle form submission
+            modal.querySelector('#edit-task-form').addEventListener('submit', (e) => {
+                e.preventDefault();
+                this.updateTask(taskId, e.target);
+                document.body.removeChild(modal);
+            });
+            
+            // Handle cancel
+            modal.querySelector('#cancel-edit').addEventListener('click', () => {
+                document.body.removeChild(modal);
+            });
+            
+            // Close on backdrop click
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    document.body.removeChild(modal);
+                }
+            });
+        })
+        .catch(error => {
+            console.error('Error fetching task details:', error);
+            this.notifications.show('Failed to load task details.', 'error');
+        });
+    }
+
+    logFocusSessionStart(taskId, duration, notes) {
+        fetch('/api/sessions/start', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ 
+                task_id: taskId, 
+                duration: duration, 
+                notes: notes 
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                console.log('Focus session started successfully');
+            }
+        })
+        .catch(error => {
+            console.error('Error logging focus session start:', error);
+        });
+    }
+
+    updateTask(taskId, form) {
+        const formData = new FormData(form);
+        const taskData = Object.fromEntries(formData);
+        
+        fetch(`/api/tasks/${taskId}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(taskData)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                this.notifications.show('Task updated successfully!', 'success');
+                location.reload(); // Refresh to show updated task
+            } else {
+                this.notifications.show('Failed to update task. Try again.', 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Error updating task:', error);
+            this.notifications.show('Failed to update task.', 'error');
         });
     }
 }

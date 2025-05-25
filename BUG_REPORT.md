@@ -172,14 +172,24 @@ Failed to load resource: the server responded with a status of 403 ()
 - [x] Journal entries working
 
 ### 🔍 **Known Issues:**
-- [ ] Dashboard task count showing 0/0 after task completion and refresh
+- [x] Dashboard task count showing 0/0 after task completion and refresh - FIXED
+- [x] Journal text not clearing after save - FIXED  
+- [x] Analytics showing mock data instead of real data - FIXED
 - [ ] SQLite date adapter deprecation warnings (Python 3.12+)
+- [ ] Play button (start focus session) not functional
+- [ ] Edit button not functional
+- [ ] Missing "In Progress" task status
 
 ### 🚀 **Next Priorities:**
-1. Fix dashboard task counting logic
-2. Update SQLite date handling for Python 3.12+ compatibility
-3. Add comprehensive error logging
-4. Implement automated testing to catch similar issues
+1. ✅ Fix dashboard task counting logic - COMPLETED
+2. ✅ Fix journal text clearing - COMPLETED
+3. ✅ Replace analytics mock data with real data - COMPLETED
+4. ✅ Add deadline reminder system - COMPLETED
+5. 🔄 Fix non-functional task action buttons (play/edit)
+6. 🔄 Add "In Progress" task status functionality
+7. Update SQLite date handling for Python 3.12+ compatibility
+8. Add comprehensive error logging
+9. Implement automated testing to catch similar issues
 
 ---
 

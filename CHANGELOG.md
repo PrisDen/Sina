@@ -110,6 +110,46 @@ sina/
 - [ ] Data export functionality
 - [ ] Enhanced Sina personality features
 
+## [0.2.2] - 2024-05-26
+
+### 🚀 Major Feature Updates & Complete Bug Resolution
+
+#### ✅ **All Critical Issues Resolved**
+- **Fixed Dashboard Task Count Logic**
+  - Root cause: API endpoint using different logic than dashboard route
+  - Solution: Unified logic to show `completed_today / (pending_tasks + completed_today)`
+  - Impact: Real-time updates now work correctly for checking/unchecking tasks
+
+- **Fixed Journal Text Clearing**
+  - Root cause: Text remained in textarea after saving journal entry
+  - Solution: Enhanced saveJournalEntry() to clear both dashboard and journal textareas
+  - Impact: Immediate text clearing after successful save
+
+- **Replaced Analytics Mock Data with Real Data**
+  - Root cause: Analytics showed fake buffer data instead of user's actual data
+  - Solution: Implemented real database queries for weekly progress and mood trends
+  - Impact: Analytics now reflects actual user performance and journal entries
+
+#### 🚀 **New Feature: Comprehensive Deadline Reminder System**
+- **Sina's Progressive Strictness**: Gets harsher as deadlines approach
+- **Overdue Tasks**: VERY STRICT messaging with harsh quotes
+- **Urgent Tasks** (within 24 hours): STRICT warnings with time remaining
+- **Real-time Notifications**: Every 30 minutes + on page load
+- **Smart Messaging**: Deadline warnings override performance-based messages
+
+#### 🔧 **Technical Improvements**
+- Enhanced error handling with graceful fallbacks
+- Unified datetime parsing across all routes
+- Real-time dashboard statistics updates
+- Improved notification system with warning types
+- Better user experience with immediate feedback
+
+#### 📋 **Remaining Issues Identified**
+- Play button (start focus session) not functional
+- Edit button not functional  
+- Missing "In Progress" task status
+- SQLite date adapter deprecation warnings (Python 3.12+)
+
 ## [0.2.1] - 2024-05-26
 
 ### 🐛 Critical Bug Fixes & Stability Improvements
