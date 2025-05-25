@@ -5,3 +5,4 @@ MarkupSafe
 itsdangerous
 click
 blinker
+gunicorn
