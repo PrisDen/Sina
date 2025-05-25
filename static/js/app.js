@@ -236,9 +236,14 @@ class SinaApp {
         .then(data => {
             if (data.success) {
                 this.notifications.show('Journal entry saved. Sina appreciates your reflection.', 'success');
-                const textarea = document.querySelector('#journal-textarea');
-                if (textarea) {
-                    textarea.value = '';
+                // Clear the textarea on both dashboard and journal pages
+                const dashboardTextarea = document.querySelector('#journal-textarea');
+                const journalTextarea = document.querySelector('#journal-content');
+                if (dashboardTextarea) {
+                    dashboardTextarea.value = '';
+                }
+                if (journalTextarea) {
+                    journalTextarea.value = '';
                 }
             }
         })
@@ -438,10 +443,18 @@ class SinaApp {
             this.updateDashboardStats();
         }, 5 * 60 * 1000);
         
+        // Check for deadline reminders every 30 minutes
+        setInterval(() => {
+            this.checkDeadlineReminders();
+        }, 30 * 60 * 1000);
+        
         // Check for motivational reminders every hour
         setInterval(() => {
             this.checkForReminders();
         }, 60 * 60 * 1000);
+        
+        // Initial deadline check
+        this.checkDeadlineReminders();
     }
 
     checkForReminders() {
@@ -451,6 +464,27 @@ class SinaApp {
         if (!lastActivity || (now - parseInt(lastActivity)) > 2 * 60 * 60 * 1000) {
             this.notifications.show('Sina reminds you: Discipline is a daily choice. What will you accomplish today?', 'info');
         }
+    }
+
+    checkDeadlineReminders() {
+        fetch('/api/deadline/check')
+        .then(response => response.json())
+        .then(data => {
+            if (data.overdue && data.overdue.length > 0) {
+                data.overdue.forEach(task => {
+                    this.notifications.show(`🚨 OVERDUE: "${task.title}" was due ${task.overdue_text}! Sina is disappointed.`, 'error', 10000);
+                });
+            }
+            
+            if (data.urgent && data.urgent.length > 0) {
+                data.urgent.forEach(task => {
+                    this.notifications.show(`⏰ URGENT: "${task.title}" is due in ${task.time_left}! Focus NOW!`, 'warning', 8000);
+                });
+            }
+        })
+        .catch(error => {
+            console.error('Error checking deadlines:', error);
+        });
     }
 }
 

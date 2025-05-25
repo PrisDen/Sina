@@ -165,12 +165,83 @@ SINA_QUOTES = {
 }
 
 def get_sina_message(user_id):
-    """Generate Sina's personalized message based on user performance"""
+    """Generate Sina's personalized message based on user performance and deadlines"""
     conn = sqlite3.connect('instance/sina.db')
     cursor = conn.cursor()
     
-    # Get recent performance data
-    today = datetime.now().date()
+    # Check for overdue and approaching deadlines first
+    now = datetime.now()
+    today = now.date()
+    
+    # Check overdue tasks
+    cursor.execute('''
+        SELECT title, deadline FROM tasks 
+        WHERE user_id = ? AND completed = FALSE AND deadline IS NOT NULL 
+        AND datetime(deadline) < datetime('now')
+        ORDER BY deadline ASC
+        LIMIT 3
+    ''', (user_id,))
+    overdue_tasks = cursor.fetchall()
+    
+    # Check tasks due within 24 hours
+    tomorrow = now + timedelta(hours=24)
+    cursor.execute('''
+        SELECT title, deadline FROM tasks 
+        WHERE user_id = ? AND completed = FALSE AND deadline IS NOT NULL 
+        AND datetime(deadline) BETWEEN datetime('now') AND datetime(?)
+        ORDER BY deadline ASC
+        LIMIT 3
+    ''', (user_id, tomorrow.isoformat()))
+    urgent_tasks = cursor.fetchall()
+    
+    # If there are overdue tasks, Sina gets VERY strict
+    if overdue_tasks:
+        task_titles = [task[0] for task in overdue_tasks[:2]]
+        if len(overdue_tasks) == 1:
+            message = f"UNACCEPTABLE! '{task_titles[0]}' is OVERDUE. Stop making excuses and GET IT DONE NOW!"
+        else:
+            message = f"This is embarrassing. You have {len(overdue_tasks)} overdue tasks including '{task_titles[0]}' and '{task_titles[1]}'. Your discipline is failing you."
+        
+        strict_quotes = [
+            "Deadlines are not suggestions. They are commitments to your future self.",
+            "Every missed deadline is a broken promise to yourself.",
+            "Procrastination is the assassination of motivation.",
+            "You can't negotiate with time. It doesn't care about your excuses."
+        ]
+        quote = random.choice(strict_quotes)
+        return {'message': message, 'quote': quote, 'tone': 'strict'}
+    
+    # If there are urgent tasks (due within 24 hours), Sina gets strict
+    if urgent_tasks:
+        task_title = urgent_tasks[0][0]
+        deadline_str = urgent_tasks[0][1]
+        try:
+            if 'T' in deadline_str:
+                deadline = datetime.fromisoformat(deadline_str.replace('T', ' '))
+            else:
+                deadline = datetime.strptime(deadline_str, '%Y-%m-%d %H:%M:%S')
+            
+            hours_left = (deadline - now).total_seconds() / 3600
+            
+            if hours_left < 2:
+                message = f"URGENT! '{task_title}' is due in {int(hours_left)} hours. Drop everything and focus NOW!"
+            elif hours_left < 6:
+                message = f"Time is running out! '{task_title}' is due in {int(hours_left)} hours. No more delays!"
+            else:
+                message = f"'{task_title}' is due within 24 hours. Time to get serious and prioritize this task."
+        except:
+            message = f"'{task_title}' has an approaching deadline. Don't let it become overdue!"
+        
+        urgent_quotes = [
+            "Urgency is the mother of efficiency.",
+            "When time is short, excuses are shorter.",
+            "The clock is ticking. Your discipline is being tested.",
+            "Pressure makes diamonds. What will it make of you?"
+        ]
+        quote = random.choice(urgent_quotes)
+        return {'message': message, 'quote': quote, 'tone': 'strict'}
+    
+    # Regular performance-based messaging
     week_ago = today - timedelta(days=7)
     
     # Check completed tasks this week
@@ -650,25 +721,63 @@ def analytics():
         'best_focus_day': 'Monday'
     }
     
-    # Weekly data (mock)
-    weekly_data = [
-        {'name': 'Monday', 'completed': 3, 'total': 5, 'completion_percentage': 60},
-        {'name': 'Tuesday', 'completed': 4, 'total': 4, 'completion_percentage': 100},
-        {'name': 'Wednesday', 'completed': 2, 'total': 6, 'completion_percentage': 33},
-        {'name': 'Thursday', 'completed': 5, 'total': 5, 'completion_percentage': 100},
-        {'name': 'Friday', 'completed': 3, 'total': 4, 'completion_percentage': 75},
-        {'name': 'Saturday', 'completed': 1, 'total': 2, 'completion_percentage': 50},
-        {'name': 'Sunday', 'completed': 2, 'total': 3, 'completion_percentage': 67}
-    ]
+    # Real weekly data based on actual task completions
+    weekly_data = []
+    today = datetime.now().date()
+    for i in range(7):
+        day_date = today - timedelta(days=6-i)
+        day_name = day_date.strftime('%A')
+        
+        cursor.execute('''
+            SELECT COUNT(*) FROM tasks 
+            WHERE user_id = ? AND completed = TRUE AND DATE(completed_at) = ?
+        ''', (user_id, day_date))
+        completed = cursor.fetchone()[0]
+        
+        cursor.execute('''
+            SELECT COUNT(*) FROM tasks 
+            WHERE user_id = ? AND (DATE(created_at) <= ? AND (completed = FALSE OR DATE(completed_at) >= ?))
+        ''', (user_id, day_date, day_date))
+        total = cursor.fetchone()[0]
+        
+        completion_percentage = round((completed / total * 100) if total > 0 else 0)
+        
+        weekly_data.append({
+            'name': day_name,
+            'completed': completed,
+            'total': total,
+            'completion_percentage': completion_percentage
+        })
     
-    # Mood trends (mock)
-    mood_trends = [
-        {'emoji': '😄', 'label': 'Excellent', 'count': 8, 'percentage': 40},
-        {'emoji': '😊', 'label': 'Good', 'count': 6, 'percentage': 30},
-        {'emoji': '😐', 'label': 'Neutral', 'count': 4, 'percentage': 20},
-        {'emoji': '😕', 'label': 'Poor', 'count': 2, 'percentage': 10},
-        {'emoji': '😢', 'label': 'Terrible', 'count': 0, 'percentage': 0}
-    ]
+    # Real mood trends based on journal entries
+    cursor.execute('''
+        SELECT mood, COUNT(*) FROM journal_entries 
+        WHERE user_id = ? 
+        GROUP BY mood
+    ''', (user_id,))
+    mood_data = cursor.fetchall()
+    
+    mood_mapping = {
+        1: {'emoji': '😢', 'label': 'Terrible'},
+        2: {'emoji': '😕', 'label': 'Poor'},
+        3: {'emoji': '😐', 'label': 'Neutral'},
+        4: {'emoji': '😊', 'label': 'Good'},
+        5: {'emoji': '😄', 'label': 'Excellent'}
+    }
+    
+    total_mood_entries = sum([count for _, count in mood_data])
+    mood_trends = []
+    
+    for mood_value in range(1, 6):
+        count = next((count for mood, count in mood_data if mood == mood_value), 0)
+        percentage = round((count / total_mood_entries * 100) if total_mood_entries > 0 else 0)
+        
+        mood_trends.append({
+            'emoji': mood_mapping[mood_value]['emoji'],
+            'label': mood_mapping[mood_value]['label'],
+            'count': count,
+            'percentage': percentage
+        })
     
     # Task categories
     cursor.execute('''
@@ -844,18 +953,21 @@ def api_dashboard_stats():
     
     today = datetime.now().date()
     
-    # Get stats
+    # Get stats - Use same logic as dashboard route
     cursor.execute('''
         SELECT COUNT(*) FROM tasks 
-        WHERE user_id = ? AND DATE(created_at) = ?
-    ''', (user_id, today))
-    today_tasks = cursor.fetchone()[0]
+        WHERE user_id = ? AND completed = FALSE
+    ''', (user_id,))
+    pending_tasks_count = cursor.fetchone()[0]
     
     cursor.execute('''
         SELECT COUNT(*) FROM tasks 
         WHERE user_id = ? AND completed = TRUE AND DATE(completed_at) = ?
     ''', (user_id, today))
     completed_today = cursor.fetchone()[0]
+    
+    # Total tasks for today = pending tasks + completed today
+    today_tasks = pending_tasks_count + completed_today
     
     cursor.execute('''
         SELECT COALESCE(SUM(duration), 0) FROM focus_sessions 
@@ -890,6 +1002,92 @@ def api_dashboard_stats():
         'completed_today': completed_today,
         'today_minutes': today_minutes,
         'streak': streak
+    })
+
+@app.route('/api/deadline/check')
+@login_required
+def api_check_deadlines():
+    user_id = session['user_id']
+    conn = sqlite3.connect('instance/sina.db')
+    cursor = conn.cursor()
+    
+    now = datetime.now()
+    
+    # Check overdue tasks
+    cursor.execute('''
+        SELECT title, deadline FROM tasks 
+        WHERE user_id = ? AND completed = FALSE AND deadline IS NOT NULL 
+        AND datetime(deadline) < datetime('now')
+        ORDER BY deadline ASC
+    ''', (user_id,))
+    overdue_data = cursor.fetchall()
+    
+    overdue_tasks = []
+    for task_title, deadline_str in overdue_data:
+        try:
+            if 'T' in deadline_str:
+                deadline = datetime.fromisoformat(deadline_str.replace('T', ' '))
+            else:
+                deadline = datetime.strptime(deadline_str, '%Y-%m-%d %H:%M:%S')
+            
+            overdue_hours = (now - deadline).total_seconds() / 3600
+            
+            if overdue_hours < 24:
+                overdue_text = f"{int(overdue_hours)} hours ago"
+            else:
+                overdue_days = int(overdue_hours / 24)
+                overdue_text = f"{overdue_days} day{'s' if overdue_days > 1 else ''} ago"
+            
+            overdue_tasks.append({
+                'title': task_title,
+                'overdue_text': overdue_text
+            })
+        except:
+            overdue_tasks.append({
+                'title': task_title,
+                'overdue_text': 'some time ago'
+            })
+    
+    # Check urgent tasks (due within 6 hours)
+    urgent_deadline = now + timedelta(hours=6)
+    cursor.execute('''
+        SELECT title, deadline FROM tasks 
+        WHERE user_id = ? AND completed = FALSE AND deadline IS NOT NULL 
+        AND datetime(deadline) BETWEEN datetime('now') AND datetime(?)
+        ORDER BY deadline ASC
+    ''', (user_id, urgent_deadline.isoformat()))
+    urgent_data = cursor.fetchall()
+    
+    urgent_tasks = []
+    for task_title, deadline_str in urgent_data:
+        try:
+            if 'T' in deadline_str:
+                deadline = datetime.fromisoformat(deadline_str.replace('T', ' '))
+            else:
+                deadline = datetime.strptime(deadline_str, '%Y-%m-%d %H:%M:%S')
+            
+            hours_left = (deadline - now).total_seconds() / 3600
+            
+            if hours_left < 1:
+                time_left = f"{int(hours_left * 60)} minutes"
+            else:
+                time_left = f"{int(hours_left)} hours"
+            
+            urgent_tasks.append({
+                'title': task_title,
+                'time_left': time_left
+            })
+        except:
+            urgent_tasks.append({
+                'title': task_title,
+                'time_left': 'soon'
+            })
+    
+    conn.close()
+    
+    return jsonify({
+        'overdue': overdue_tasks,
+        'urgent': urgent_tasks
     })
 
 if __name__ == '__main__':
