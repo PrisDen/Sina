@@ -1,0 +1,331 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Sina{% endblock %}
+
+{% block content %}
+<div class="px-4 sm:px-6 lg:px-8">
+    <!-- Sina's Message Section -->
+    <div class="mb-8">
+        <div class="sina-card rounded-lg p-6 sina-shadow">
+            <div class="flex items-start">
+                <div class="flex-shrink-0">
+                    <div class="h-12 w-12 sina-gradient rounded-full flex items-center justify-center">
+                        <i class="fas fa-user-graduate text-white text-lg"></i>
+                    </div>
+                </div>
+                <div class="ml-4 flex-1">
+                    <div class="flex items-center justify-between">
+                        <h3 class="text-lg font-medium text-gray-900">
+                            Sina's Message
+                            <span class="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium 
+                                {% if sina_tone == 'encouraging' %}bg-green-100 text-green-800
+                                {% elif sina_tone == 'strict' %}bg-red-100 text-red-800
+                                {% else %}bg-blue-100 text-blue-800{% endif %}">
+                                {{ sina_tone.title() }}
+                            </span>
+                        </h3>
+                        <div class="text-sm text-gray-500">
+                            Today
+                        </div>
+                    </div>
+                    <p class="mt-2 text-gray-700">{{ sina_message }}</p>
+                    <blockquote class="mt-3 text-sm italic text-gray-600 border-l-4 border-indigo-400 pl-4">
+                        "{{ sina_quote }}"
+                    </blockquote>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Stats Overview -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <!-- Today's Tasks -->
+        <div class="bg-white overflow-hidden shadow rounded-lg">
+            <div class="p-5">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <i class="fas fa-tasks text-indigo-600 text-2xl"></i>
+                    </div>
+                    <div class="ml-5 w-0 flex-1">
+                        <dl>
+                            <dt class="text-sm font-medium text-gray-500 truncate">Today's Tasks</dt>
+                            <dd class="text-lg font-medium text-gray-900">{{ completed_today }}/{{ today_tasks }}</dd>
+                        </dl>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-gray-50 px-5 py-3">
+                <div class="text-sm">
+                    {% if today_tasks > 0 %}
+                        <div class="w-full bg-gray-200 rounded-full h-2">
+                            <div class="bg-indigo-600 h-2 rounded-full" style="width: {{ (completed_today / today_tasks * 100) }}%"></div>
+                        </div>
+                        <span class="text-gray-600 mt-1 block">{{ (completed_today / today_tasks * 100)|round|int }}% complete</span>
+                    {% else %}
+                        <span class="text-gray-600">No tasks created today</span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Focus Sessions -->
+        <div class="bg-white overflow-hidden shadow rounded-lg">
+            <div class="p-5">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <i class="fas fa-clock text-green-600 text-2xl"></i>
+                    </div>
+                    <div class="ml-5 w-0 flex-1">
+                        <dl>
+                            <dt class="text-sm font-medium text-gray-500 truncate">Focus Time Today</dt>
+                            <dd class="text-lg font-medium text-gray-900">{{ today_minutes }} min</dd>
+                        </dl>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-gray-50 px-5 py-3">
+                <div class="text-sm">
+                    <span class="text-gray-600">{{ today_sessions }} sessions completed</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Current Streak -->
+        <div class="bg-white overflow-hidden shadow rounded-lg">
+            <div class="p-5">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <i class="fas fa-fire text-orange-600 text-2xl"></i>
+                    </div>
+                    <div class="ml-5 w-0 flex-1">
+                        <dl>
+                            <dt class="text-sm font-medium text-gray-500 truncate">Current Streak</dt>
+                            <dd class="text-lg font-medium text-gray-900">{{ streak }} days</dd>
+                        </dl>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-gray-50 px-5 py-3">
+                <div class="text-sm">
+                    {% if streak > 0 %}
+                        <span class="text-green-600">Keep it going! 🔥</span>
+                    {% else %}
+                        <span class="text-gray-600">Start your streak today</span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Timer -->
+        <div class="bg-white overflow-hidden shadow rounded-lg">
+            <div class="p-5">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <i class="fas fa-stopwatch text-purple-600 text-2xl"></i>
+                    </div>
+                    <div class="ml-5 w-0 flex-1">
+                        <dl>
+                            <dt class="text-sm font-medium text-gray-500 truncate">Quick Timer</dt>
+                            <dd class="text-lg font-medium text-gray-900" id="timer-display">25:00</dd>
+                        </dl>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-gray-50 px-5 py-3">
+                <div class="flex space-x-2">
+                    <button id="start-timer" class="flex-1 bg-green-600 text-white text-xs py-1 px-2 rounded hover:bg-green-700">
+                        Start
+                    </button>
+                    <button id="pause-timer" class="flex-1 bg-yellow-600 text-white text-xs py-1 px-2 rounded hover:bg-yellow-700">
+                        Pause
+                    </button>
+                    <button id="reset-timer" class="flex-1 bg-red-600 text-white text-xs py-1 px-2 rounded hover:bg-red-700">
+                        Reset
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content Grid -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <!-- Pending Tasks -->
+        <div class="lg:col-span-2">
+            <div class="bg-white shadow rounded-lg">
+                <div class="px-4 py-5 sm:p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-lg leading-6 font-medium text-gray-900">
+                            <i class="fas fa-list-ul mr-2 text-indigo-600"></i>
+                            Priority Tasks
+                        </h3>
+                        <button class="bg-indigo-600 text-white px-4 py-2 rounded-md text-sm hover:bg-indigo-700 transition-colors">
+                            <i class="fas fa-plus mr-1"></i>Add Task
+                        </button>
+                    </div>
+                    
+                    {% if pending_tasks %}
+                        <div class="space-y-3">
+                            {% for task in pending_tasks %}
+                            <div class="flex items-center justify-between p-3 border border-gray-200 rounded-lg hover:bg-gray-50">
+                                <div class="flex items-center space-x-3">
+                                    <input type="checkbox" class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded">
+                                    <div>
+                                        <p class="text-sm font-medium text-gray-900">{{ task[1] }}</p>
+                                        <div class="flex items-center space-x-2 mt-1">
+                                            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium
+                                                {% if task[2] == 'high' %}bg-red-100 text-red-800
+                                                {% elif task[2] == 'medium' %}bg-yellow-100 text-yellow-800
+                                                {% else %}bg-green-100 text-green-800{% endif %}">
+                                                {{ task[2].title() }}
+                                            </span>
+                                            <span class="text-xs text-gray-500">{{ task[3] }}</span>
+                                            {% if task[4] %}
+                                                <span class="text-xs text-gray-500">Due: {{ task[4][:10] }}</span>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="flex items-center space-x-2">
+                                    <button class="text-indigo-600 hover:text-indigo-900">
+                                        <i class="fas fa-play text-sm"></i>
+                                    </button>
+                                    <button class="text-gray-400 hover:text-gray-600">
+                                        <i class="fas fa-edit text-sm"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="text-center py-8">
+                            <i class="fas fa-clipboard-list text-gray-400 text-4xl mb-4"></i>
+                            <p class="text-gray-500">No pending tasks. Time to create some goals!</p>
+                            <button class="mt-4 bg-indigo-600 text-white px-4 py-2 rounded-md text-sm hover:bg-indigo-700">
+                                Create Your First Task
+                            </button>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar -->
+        <div class="space-y-6">
+            <!-- Today's Journal -->
+            <div class="bg-white shadow rounded-lg">
+                <div class="px-4 py-5 sm:p-6">
+                    <h3 class="text-lg leading-6 font-medium text-gray-900 mb-4">
+                        <i class="fas fa-book mr-2 text-purple-600"></i>
+                        Today's Reflection
+                    </h3>
+                    <textarea class="w-full h-24 p-3 border border-gray-300 rounded-md resize-none focus:ring-indigo-500 focus:border-indigo-500" 
+                              placeholder="How are you feeling today? What are your goals?"></textarea>
+                    <button class="mt-3 w-full bg-purple-600 text-white py-2 rounded-md text-sm hover:bg-purple-700">
+                        Save Entry
+                    </button>
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="bg-white shadow rounded-lg">
+                <div class="px-4 py-5 sm:p-6">
+                    <h3 class="text-lg leading-6 font-medium text-gray-900 mb-4">
+                        <i class="fas fa-bolt mr-2 text-yellow-600"></i>
+                        Quick Actions
+                    </h3>
+                    <div class="space-y-3">
+                        <button class="w-full text-left p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+                            <i class="fas fa-plus-circle text-indigo-600 mr-2"></i>
+                            Add New Task
+                        </button>
+                        <button class="w-full text-left p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+                            <i class="fas fa-play-circle text-green-600 mr-2"></i>
+                            Start Focus Session
+                        </button>
+                        <button class="w-full text-left p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+                            <i class="fas fa-chart-bar text-blue-600 mr-2"></i>
+                            View Analytics
+                        </button>
+                        <button class="w-full text-left p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+                            <i class="fas fa-cog text-gray-600 mr-2"></i>
+                            Settings
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Motivation Quote -->
+            <div class="bg-gradient-to-r from-purple-400 via-pink-500 to-red-500 rounded-lg p-6 text-white">
+                <div class="text-center">
+                    <i class="fas fa-quote-left text-2xl mb-3 opacity-75"></i>
+                    <p class="text-sm italic mb-3">{{ sina_quote }}</p>
+                    <p class="text-xs opacity-75">- Sina, Your Mentor</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block scripts %}
+<script>
+    // Pomodoro Timer
+    let timerInterval;
+    let timeLeft = 25 * 60; // 25 minutes in seconds
+    let isRunning = false;
+
+    function updateTimerDisplay() {
+        const minutes = Math.floor(timeLeft / 60);
+        const seconds = timeLeft % 60;
+        document.getElementById('timer-display').textContent = 
+            `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+    }
+
+    function startTimer() {
+        if (!isRunning) {
+            isRunning = true;
+            timerInterval = setInterval(() => {
+                timeLeft--;
+                updateTimerDisplay();
+                
+                if (timeLeft <= 0) {
+                    clearInterval(timerInterval);
+                    isRunning = false;
+                    alert('Focus session complete! Time for a break.');
+                    timeLeft = 25 * 60;
+                    updateTimerDisplay();
+                }
+            }, 1000);
+        }
+    }
+
+    function pauseTimer() {
+        if (isRunning) {
+            clearInterval(timerInterval);
+            isRunning = false;
+        }
+    }
+
+    function resetTimer() {
+        clearInterval(timerInterval);
+        isRunning = false;
+        timeLeft = 25 * 60;
+        updateTimerDisplay();
+    }
+
+    // Event listeners
+    document.getElementById('start-timer').addEventListener('click', startTimer);
+    document.getElementById('pause-timer').addEventListener('click', pauseTimer);
+    document.getElementById('reset-timer').addEventListener('click', resetTimer);
+
+    // Task completion
+    document.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
+        checkbox.addEventListener('change', function() {
+            if (this.checked) {
+                // Add completion logic here
+                console.log('Task completed!');
+            }
+        });
+    });
+</script>
+{% endblock %}
+{% endblock %} 
