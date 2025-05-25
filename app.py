@@ -453,6 +453,174 @@ def focus():
                          today_minutes=today_minutes,
                          sessions=sessions)
 
+@app.route('/journal')
+@login_required
+def journal():
+    user_id = session['user_id']
+    conn = sqlite3.connect('instance/sina.db')
+    cursor = conn.cursor()
+    
+    today = datetime.now().date()
+    
+    # Get today's entry
+    cursor.execute('''
+        SELECT content, mood, created_at FROM journal_entries 
+        WHERE user_id = ? AND entry_date = ?
+    ''', (user_id, today))
+    today_entry_data = cursor.fetchone()
+    
+    today_entry = None
+    if today_entry_data:
+        today_entry = {
+            'content': today_entry_data[0],
+            'mood': today_entry_data[1],
+            'created_at': datetime.strptime(today_entry_data[2], '%Y-%m-%d %H:%M:%S')
+        }
+    
+    # Get recent entries
+    cursor.execute('''
+        SELECT content, mood, entry_date, created_at FROM journal_entries 
+        WHERE user_id = ? 
+        ORDER BY entry_date DESC 
+        LIMIT 10
+    ''', (user_id,))
+    
+    entries_data = cursor.fetchall()
+    entries = []
+    for entry_data in entries_data:
+        entry = {
+            'content': entry_data[0],
+            'mood': entry_data[1],
+            'entry_date': datetime.strptime(entry_data[2], '%Y-%m-%d').date(),
+            'created_at': datetime.strptime(entry_data[3], '%Y-%m-%d %H:%M:%S')
+        }
+        entries.append(entry)
+    
+    # Calculate stats
+    cursor.execute('SELECT COUNT(*) FROM journal_entries WHERE user_id = ?', (user_id,))
+    total_entries = cursor.fetchone()[0]
+    
+    cursor.execute('SELECT AVG(mood) FROM journal_entries WHERE user_id = ?', (user_id,))
+    avg_mood_result = cursor.fetchone()[0]
+    average_mood = round(avg_mood_result, 1) if avg_mood_result else 3.0
+    
+    # Calculate journal streak
+    cursor.execute('''
+        SELECT entry_date FROM journal_entries 
+        WHERE user_id = ? 
+        ORDER BY entry_date DESC
+    ''', (user_id,))
+    entry_dates = [datetime.strptime(row[0], '%Y-%m-%d').date() for row in cursor.fetchall()]
+    
+    journal_streak = 0
+    if entry_dates:
+        current_date = datetime.now().date()
+        for date in entry_dates:
+            if date == current_date or date == current_date - timedelta(days=journal_streak):
+                if date == current_date - timedelta(days=journal_streak):
+                    journal_streak += 1
+                current_date = date
+            else:
+                break
+    
+    conn.close()
+    
+    return render_template('journal.html',
+                         today_entry=today_entry,
+                         entries=entries,
+                         total_entries=total_entries,
+                         average_mood=average_mood,
+                         journal_streak=journal_streak,
+                         today_date=today.strftime('%B %d, %Y'))
+
+@app.route('/analytics')
+@login_required
+def analytics():
+    user_id = session['user_id']
+    conn = sqlite3.connect('instance/sina.db')
+    cursor = conn.cursor()
+    
+    # Basic stats
+    cursor.execute('SELECT COUNT(*) FROM tasks WHERE user_id = ?', (user_id,))
+    total_tasks = cursor.fetchone()[0]
+    
+    cursor.execute('SELECT COUNT(*) FROM tasks WHERE user_id = ? AND completed = TRUE', (user_id,))
+    completed_tasks = cursor.fetchone()[0]
+    
+    completion_rate = round((completed_tasks / total_tasks * 100) if total_tasks > 0 else 0, 1)
+    
+    cursor.execute('SELECT COALESCE(SUM(duration), 0) FROM focus_sessions WHERE user_id = ?', (user_id,))
+    total_focus_minutes = cursor.fetchone()[0]
+    total_focus_hours = round(total_focus_minutes / 60, 1)
+    
+    cursor.execute('SELECT COUNT(*) FROM journal_entries WHERE user_id = ?', (user_id,))
+    total_entries = cursor.fetchone()[0]
+    
+    # Mock data for demo
+    stats = {
+        'total_tasks': total_tasks,
+        'completion_rate': completion_rate,
+        'total_focus_hours': total_focus_hours,
+        'avg_daily_focus': round(total_focus_hours / 30, 1),  # Assuming 30 days
+        'total_entries': total_entries,
+        'journal_streak': 5,  # Mock data
+        'best_streak': 12,    # Mock data
+        'avg_session_length': 25,
+        'total_sessions': cursor.execute('SELECT COUNT(*) FROM focus_sessions WHERE user_id = ?', (user_id,)).fetchone()[0],
+        'best_focus_day': 'Monday'
+    }
+    
+    # Weekly data (mock)
+    weekly_data = [
+        {'name': 'Monday', 'completed': 3, 'total': 5, 'completion_percentage': 60},
+        {'name': 'Tuesday', 'completed': 4, 'total': 4, 'completion_percentage': 100},
+        {'name': 'Wednesday', 'completed': 2, 'total': 6, 'completion_percentage': 33},
+        {'name': 'Thursday', 'completed': 5, 'total': 5, 'completion_percentage': 100},
+        {'name': 'Friday', 'completed': 3, 'total': 4, 'completion_percentage': 75},
+        {'name': 'Saturday', 'completed': 1, 'total': 2, 'completion_percentage': 50},
+        {'name': 'Sunday', 'completed': 2, 'total': 3, 'completion_percentage': 67}
+    ]
+    
+    # Mood trends (mock)
+    mood_trends = [
+        {'emoji': '😄', 'label': 'Excellent', 'count': 8, 'percentage': 40},
+        {'emoji': '😊', 'label': 'Good', 'count': 6, 'percentage': 30},
+        {'emoji': '😐', 'label': 'Neutral', 'count': 4, 'percentage': 20},
+        {'emoji': '😕', 'label': 'Poor', 'count': 2, 'percentage': 10},
+        {'emoji': '😢', 'label': 'Terrible', 'count': 0, 'percentage': 0}
+    ]
+    
+    # Task categories
+    cursor.execute('''
+        SELECT category, COUNT(*) FROM tasks WHERE user_id = ? GROUP BY category
+    ''', (user_id,))
+    category_data = cursor.fetchall()
+    
+    task_categories = []
+    for cat_data in category_data:
+        task_categories.append({
+            'name': cat_data[0],
+            'count': cat_data[1],
+            'percentage': round((cat_data[1] / total_tasks * 100) if total_tasks > 0 else 0, 1)
+        })
+    
+    # Achievements (mock)
+    achievements = [
+        {'icon': '🎯', 'title': 'First Task', 'description': 'Completed your first task'},
+        {'icon': '🔥', 'title': 'Week Warrior', 'description': '7 days of consistent progress'},
+        {'icon': '⏰', 'title': 'Focus Master', 'description': '10 focus sessions completed'},
+        {'icon': '📝', 'title': 'Reflective Soul', 'description': '5 journal entries written'}
+    ]
+    
+    conn.close()
+    
+    return render_template('analytics.html',
+                         stats=stats,
+                         weekly_data=weekly_data,
+                         mood_trends=mood_trends,
+                         task_categories=task_categories,
+                         achievements=achievements)
+
 # API Routes
 @app.route('/api/tasks/create', methods=['POST'])
 @login_required
@@ -552,6 +720,7 @@ def api_save_journal():
     data = request.get_json()
     user_id = session['user_id']
     content = data['content']
+    mood = data.get('mood', 5)  # Default mood is 5 (happy)
     
     try:
         conn = sqlite3.connect('instance/sina.db')
@@ -569,15 +738,15 @@ def api_save_journal():
         if existing:
             # Update existing entry
             cursor.execute('''
-                UPDATE journal_entries SET content = ?, created_at = CURRENT_TIMESTAMP
+                UPDATE journal_entries SET content = ?, mood = ?, created_at = CURRENT_TIMESTAMP
                 WHERE id = ?
-            ''', (content, existing[0]))
+            ''', (content, mood, existing[0]))
         else:
             # Create new entry
             cursor.execute('''
-                INSERT INTO journal_entries (user_id, content, entry_date)
-                VALUES (?, ?, ?)
-            ''', (user_id, content, today))
+                INSERT INTO journal_entries (user_id, content, mood, entry_date)
+                VALUES (?, ?, ?, ?)
+            ''', (user_id, content, mood, today))
         
         conn.commit()
         conn.close()
