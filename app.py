@@ -215,6 +215,15 @@ def index():
         return redirect(url_for('dashboard'))
     return redirect(url_for('login'))
 
+@app.route('/test')
+def test():
+    """Simple test route to verify app is working"""
+    return jsonify({
+        'status': 'success',
+        'message': 'Sina app is running correctly!',
+        'timestamp': datetime.now().isoformat()
+    })
+
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
@@ -396,16 +405,33 @@ def tasks():
     # Convert to objects for easier template access
     tasks = []
     for task_data in tasks_data:
+        # Handle different datetime formats
+        def parse_datetime(date_str):
+            if not date_str:
+                return None
+            try:
+                # Try ISO format first (from HTML datetime-local input)
+                if 'T' in date_str:
+                    return datetime.fromisoformat(date_str.replace('T', ' '))
+                # Try standard SQLite format
+                return datetime.strptime(date_str, '%Y-%m-%d %H:%M:%S')
+            except ValueError:
+                try:
+                    # Try date only format
+                    return datetime.strptime(date_str, '%Y-%m-%d')
+                except ValueError:
+                    return None
+        
         task = {
             'id': task_data[0],
             'title': task_data[1],
             'description': task_data[2],
             'priority': task_data[3],
             'category': task_data[4],
-            'deadline': datetime.strptime(task_data[5], '%Y-%m-%d %H:%M:%S') if task_data[5] else None,
+            'deadline': parse_datetime(task_data[5]),
             'completed': task_data[6],
-            'created_at': datetime.strptime(task_data[7], '%Y-%m-%d %H:%M:%S'),
-            'completed_at': datetime.strptime(task_data[8], '%Y-%m-%d %H:%M:%S') if task_data[8] else None
+            'created_at': parse_datetime(task_data[7]),
+            'completed_at': parse_datetime(task_data[8])
         }
         tasks.append(task)
     
@@ -440,9 +466,9 @@ def focus():
         SELECT COUNT(*), COALESCE(SUM(duration), 0) FROM focus_sessions 
         WHERE user_id = ? AND DATE(session_date) = ?
     ''', (user_id, today))
-    session_data = cursor.fetchone()
-    today_sessions = session_data[0]
-    today_minutes = session_data[1]
+    focus_stats = cursor.fetchone()
+    today_sessions = focus_stats[0]
+    today_minutes = focus_stats[1]
     
     # Get recent sessions
     cursor.execute('''
@@ -456,14 +482,23 @@ def focus():
     
     sessions_data = cursor.fetchall()
     sessions = []
-    for session_data in sessions_data:
-        session = {
-            'duration': session_data[0],
-            'notes': session_data[1],
-            'session_date': datetime.strptime(session_data[2], '%Y-%m-%d %H:%M:%S'),
-            'task_title': session_data[3]
+    for focus_session_data in sessions_data:
+        # Handle datetime parsing safely
+        try:
+            session_date = datetime.strptime(focus_session_data[2], '%Y-%m-%d %H:%M:%S')
+        except ValueError:
+            try:
+                session_date = datetime.fromisoformat(focus_session_data[2].replace('T', ' '))
+            except ValueError:
+                session_date = datetime.now()  # Fallback
+        
+        focus_session = {
+            'duration': focus_session_data[0],
+            'notes': focus_session_data[1],
+            'session_date': session_date,
+            'task_title': focus_session_data[3]
         }
-        sessions.append(session)
+        sessions.append(focus_session)
     
     conn.close()
     
@@ -490,10 +525,19 @@ def journal():
     
     today_entry = None
     if today_entry_data:
+        # Handle datetime parsing safely
+        try:
+            created_at = datetime.strptime(today_entry_data[2], '%Y-%m-%d %H:%M:%S')
+        except ValueError:
+            try:
+                created_at = datetime.fromisoformat(today_entry_data[2].replace('T', ' '))
+            except ValueError:
+                created_at = datetime.now()
+        
         today_entry = {
             'content': today_entry_data[0],
             'mood': today_entry_data[1],
-            'created_at': datetime.strptime(today_entry_data[2], '%Y-%m-%d %H:%M:%S')
+            'created_at': created_at
         }
     
     # Get recent entries
@@ -507,11 +551,25 @@ def journal():
     entries_data = cursor.fetchall()
     entries = []
     for entry_data in entries_data:
+        # Handle datetime parsing safely
+        try:
+            entry_date = datetime.strptime(entry_data[2], '%Y-%m-%d').date()
+        except ValueError:
+            entry_date = datetime.now().date()
+        
+        try:
+            created_at = datetime.strptime(entry_data[3], '%Y-%m-%d %H:%M:%S')
+        except ValueError:
+            try:
+                created_at = datetime.fromisoformat(entry_data[3].replace('T', ' '))
+            except ValueError:
+                created_at = datetime.now()
+        
         entry = {
             'content': entry_data[0],
             'mood': entry_data[1],
-            'entry_date': datetime.strptime(entry_data[2], '%Y-%m-%d').date(),
-            'created_at': datetime.strptime(entry_data[3], '%Y-%m-%d %H:%M:%S')
+            'entry_date': entry_date,
+            'created_at': created_at
         }
         entries.append(entry)
     
@@ -835,4 +893,6 @@ if __name__ == '__main__':
     # Ensure instance directory exists
     os.makedirs('instance', exist_ok=True)
     init_db()
-    app.run(debug=True, host='127.0.0.1', port=5000) 
+    
+    # More permissive host configuration for local development
+    app.run(debug=True, host='0.0.0.0', port=5001, threaded=True) 
