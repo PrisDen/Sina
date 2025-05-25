@@ -110,6 +110,43 @@ sina/
 - [ ] Data export functionality
 - [ ] Enhanced Sina personality features
 
+## [0.2.1] - 2024-05-26
+
+### 🐛 Critical Bug Fixes & Stability Improvements
+
+#### 🚨 **Major Issues Resolved**
+- **Fixed UnboundLocalError in Focus Route**
+  - Root cause: Variable naming conflict between Flask's `session` and local variables
+  - Solution: Renamed all conflicting variables (`session_data` → `focus_stats`, etc.)
+  - Impact: Focus page now fully functional
+
+- **Fixed DateTime ValueError in Tasks Route**
+  - Root cause: HTML datetime-local inputs produce ISO format, code expected SQLite format
+  - Solution: Implemented flexible datetime parser supporting multiple formats
+  - Impact: Tasks page now handles all datetime formats gracefully
+
+- **Fixed CDN 403 Forbidden Errors**
+  - Root cause: External CDN resources (Tailwind, Font Awesome, Google Fonts) occasionally blocked
+  - Solution: Added error handling and comprehensive fallback CSS styles
+  - Impact: Application works reliably even when CDNs fail
+
+#### 🔧 **Technical Improvements**
+- Enhanced error handling with graceful fallbacks
+- Robust datetime parsing for ISO and SQLite formats
+- Improved variable naming conventions to avoid Flask conflicts
+- Added comprehensive fallback styles for offline functionality
+
+#### 📋 **Known Issues Identified**
+- Dashboard task count showing 0/0 after task completion and refresh
+- SQLite date adapter deprecation warnings (Python 3.12+)
+
+#### 🎯 **Stability Status**
+- ✅ All pages now load successfully
+- ✅ Task creation and completion working
+- ✅ Focus sessions fully functional
+- ✅ Journal entries working
+- ✅ Analytics dashboard operational
+
 ## [0.2.0] - 2024-05-26
 
 ### 🚀 Phase 2 & 3 Complete - Full Website Launch

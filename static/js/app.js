@@ -268,17 +268,28 @@ class SinaApp {
         fetch('/api/dashboard/stats')
         .then(response => response.json())
         .then(data => {
-            // Update stats on dashboard
-            document.querySelector('#today-tasks').textContent = `${data.completed_today}/${data.today_tasks}`;
-            document.querySelector('#today-minutes').textContent = `${data.today_minutes} min`;
-            document.querySelector('#current-streak').textContent = `${data.streak} days`;
+            // Update task progress in the stats card
+            const taskProgressElement = document.querySelector('.bg-white .text-lg.font-medium.text-gray-900');
+            if (taskProgressElement && taskProgressElement.textContent.includes('/')) {
+                taskProgressElement.textContent = `${data.completed_today}/${data.today_tasks}`;
+            }
             
             // Update progress bar
-            const progressBar = document.querySelector('.progress-bar');
+            const progressBar = document.querySelector('.bg-indigo-600.h-2.rounded-full');
             if (progressBar && data.today_tasks > 0) {
                 const percentage = (data.completed_today / data.today_tasks) * 100;
                 progressBar.style.width = `${percentage}%`;
             }
+            
+            // Update percentage text
+            const percentageText = document.querySelector('.text-gray-600.mt-1.block');
+            if (percentageText && data.today_tasks > 0) {
+                const percentage = Math.round((data.completed_today / data.today_tasks) * 100);
+                percentageText.textContent = `${percentage}% complete`;
+            }
+        })
+        .catch(error => {
+            console.error('Error updating dashboard stats:', error);
         });
     }
 

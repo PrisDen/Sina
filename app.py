@@ -304,18 +304,21 @@ def dashboard():
     # Get today's stats
     today = datetime.now().date()
     
-    # Today's tasks
+    # Today's tasks - Show all pending tasks + tasks completed today
     cursor.execute('''
         SELECT COUNT(*) FROM tasks 
-        WHERE user_id = ? AND DATE(created_at) = ?
-    ''', (user_id, today))
-    today_tasks = cursor.fetchone()[0]
+        WHERE user_id = ? AND completed = FALSE
+    ''', (user_id,))
+    pending_tasks_count = cursor.fetchone()[0]
     
     cursor.execute('''
         SELECT COUNT(*) FROM tasks 
         WHERE user_id = ? AND completed = TRUE AND DATE(completed_at) = ?
     ''', (user_id, today))
     completed_today = cursor.fetchone()[0]
+    
+    # Total tasks for today = pending tasks + completed today
+    today_tasks = pending_tasks_count + completed_today
     
     # Today's focus sessions
     cursor.execute('''

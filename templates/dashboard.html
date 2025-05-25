@@ -48,7 +48,7 @@
                     </div>
                     <div class="ml-5 w-0 flex-1">
                         <dl>
-                            <dt class="text-sm font-medium text-gray-500 truncate">Today's Tasks</dt>
+                            <dt class="text-sm font-medium text-gray-500 truncate">Task Progress</dt>
                             <dd class="text-lg font-medium text-gray-900">{{ completed_today }}/{{ today_tasks }}</dd>
                         </dl>
                     </div>
@@ -62,7 +62,7 @@
                         </div>
                         <span class="text-gray-600 mt-1 block">{{ (completed_today / today_tasks * 100)|round|int }}% complete</span>
                     {% else %}
-                        <span class="text-gray-600">No tasks created today</span>
+                        <span class="text-gray-600">No tasks to complete</span>
                     {% endif %}
                 </div>
             </div>
