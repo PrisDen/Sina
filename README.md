@@ -58,7 +58,7 @@ Sina is not your friend - she's your mentor. She adapts her tone based on your p
    ```
 
 5. **Open your browser**
-   Navigate to `http://127.0.0.1:5000`
+   Navigate to `http://127.0.0.1:5001`
 
 ### First Time Setup
 
@@ -163,19 +163,80 @@ The default Pomodoro timer is 25 minutes. You can modify this in the JavaScript 
 ### Color Scheme
 The app uses a purple gradient theme. Modify the CSS variables in `style.css` to change colors.
 
+## 🌐 Production Deployment
+
+### Local Network Access
+To access Sina from other devices on your network:
+
+1. **Find your local IP address**
+   ```bash
+   # On macOS/Linux
+   ifconfig | grep "inet " | grep -v 127.0.0.1
+   
+   # On Windows
+   ipconfig | findstr "IPv4"
+   ```
+
+2. **Start Sina** (already configured for network access)
+   ```bash
+   python app.py
+   ```
+
+3. **Access from any device**
+   - Navigate to `http://YOUR_IP_ADDRESS:5001`
+   - Example: `http://192.168.1.100:5001`
+
+### Cloud Deployment Options
+
+#### **Option 1: Heroku (Free Tier)**
+```bash
+# Install Heroku CLI, then:
+heroku create your-sina-app
+git push heroku master
+```
+
+#### **Option 2: Railway**
+```bash
+# Connect your GitHub repo to Railway
+# Automatic deployment on push
+```
+
+#### **Option 3: DigitalOcean App Platform**
+```bash
+# Connect GitHub repo
+# Select Python app
+# Auto-deploy enabled
+```
+
+#### **Option 4: Self-hosted VPS**
+```bash
+# On your server:
+git clone https://github.com/PrisDen/Sina.git
+cd Sina
+pip install -r requirements.txt
+python app.py
+```
+
+### Environment Variables for Production
+```bash
+export FLASK_ENV=production
+export SECRET_KEY=your-secret-key-here
+export PORT=5001
+```
+
 ## 🐛 Troubleshooting
 
 ### Common Issues
 
 1. **Database errors**: Delete `instance/sina.db` and restart the app to recreate the database
-2. **Port conflicts**: Change the port in `app.py` from 5000 to another number
+2. **Port conflicts**: Change the port in `app.py` from 5001 to another number
 3. **Permission errors**: Ensure the `instance/` directory is writable
 4. **JavaScript errors**: Check browser console and ensure all files are loaded
 
 ### Development Mode
 The app runs in debug mode by default. For production use:
 ```python
-app.run(debug=False, host='127.0.0.1', port=5000)
+app.run(debug=False, host='0.0.0.0', port=5001)
 ```
 
 ## 🤝 Contributing

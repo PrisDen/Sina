@@ -9,7 +9,7 @@ import random
 import logging
 
 app = Flask(__name__)
-app.secret_key = 'sina_mentor_secret_key_change_in_production'
+app.secret_key = os.environ.get('SECRET_KEY', 'sina_mentor_secret_key_change_in_production')
 
 # Configure static files
 app.static_folder = 'static'
@@ -1225,5 +1225,8 @@ if __name__ == '__main__':
     os.makedirs('instance', exist_ok=True)
     init_db()
     
-    # More permissive host configuration for local development
-    app.run(debug=True, host='0.0.0.0', port=5001, threaded=True) 
+    # Production configuration
+    port = int(os.environ.get('PORT', 5001))
+    debug = os.environ.get('FLASK_ENV') != 'production'
+    
+    app.run(debug=debug, host='0.0.0.0', port=port, threaded=True) 
