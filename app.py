@@ -6,9 +6,28 @@ import os
 from functools import wraps
 import json
 import random
+import logging
 
 app = Flask(__name__)
 app.secret_key = 'sina_mentor_secret_key_change_in_production'
+
+# Configure static files
+app.static_folder = 'static'
+app.static_url_path = '/static'
+
+# Configure logging
+logging.basicConfig(level=logging.DEBUG)
+
+# Add error handlers
+@app.errorhandler(403)
+def forbidden(error):
+    app.logger.error(f"403 Forbidden: {request.url}")
+    return "Access Forbidden", 403
+
+@app.errorhandler(404)
+def not_found(error):
+    app.logger.error(f"404 Not Found: {request.url}")
+    return "Page Not Found", 404
 
 # Database initialization
 def init_db():
@@ -813,5 +832,7 @@ def api_dashboard_stats():
     })
 
 if __name__ == '__main__':
+    # Ensure instance directory exists
+    os.makedirs('instance', exist_ok=True)
     init_db()
     app.run(debug=True, host='127.0.0.1', port=5000) 
