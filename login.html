@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Sina</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .sina-gradient { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+        .sina-card { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); }
+        .sina-shadow { box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04); }
+    </style>
+</head>
+<body class="sina-gradient min-h-screen flex items-center justify-center">
+    <div class="max-w-md w-full mx-4">
+        <div class="sina-card rounded-lg sina-shadow p-8">
+            <!-- Header -->
+            <div class="text-center mb-8">
+                <i class="fas fa-brain text-4xl text-purple-600 mb-4"></i>
+                <h1 class="text-2xl font-bold text-gray-900">Welcome Back</h1>
+                <p class="text-gray-600 mt-2">Sina is ready to guide your discipline journey</p>
+            </div>
+
+            <!-- Login Form -->
+            <form id="login-form" class="space-y-6">
+                <div>
+                    <label for="username" class="block text-sm font-medium text-gray-700 mb-2">
+                        <i class="fas fa-user mr-1"></i>Username
+                    </label>
+                    <input type="text" id="username" name="username" required 
+                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                           placeholder="Enter your username">
+                </div>
+
+                <div>
+                    <label for="password" class="block text-sm font-medium text-gray-700 mb-2">
+                        <i class="fas fa-lock mr-1"></i>Password
+                    </label>
+                    <input type="password" id="password" name="password" required 
+                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                           placeholder="Enter your password">
+                </div>
+
+                <button type="submit" class="w-full sina-gradient text-white py-2 px-4 rounded-md hover:opacity-90 transition-opacity font-medium">
+                    <i class="fas fa-sign-in-alt mr-2"></i>Sign In
+                </button>
+            </form>
+
+            <!-- Divider -->
+            <div class="mt-6 text-center">
+                <span class="text-gray-500">Don't have an account?</span>
+                <a href="register.html" class="text-purple-600 hover:text-purple-700 font-medium ml-1">
+                    Create one here
+                </a>
+            </div>
+
+            <!-- Demo Account -->
+            <div class="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                <h3 class="text-sm font-medium text-blue-800 mb-2">
+                    <i class="fas fa-info-circle mr-1"></i>Try Demo Account
+                </h3>
+                <p class="text-xs text-blue-600 mb-3">
+                    Experience Sina with pre-loaded data and progress
+                </p>
+                <button onclick="loginDemo()" class="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition-colors text-sm font-medium">
+                    <i class="fas fa-play mr-2"></i>Login as Demo User
+                </button>
+            </div>
+
+            <!-- Back to Home -->
+            <div class="mt-6 text-center">
+                <a href="index.html" class="text-gray-500 hover:text-gray-700 text-sm">
+                    <i class="fas fa-arrow-left mr-1"></i>Back to Home
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification Container -->
+    <div id="notification-container" class="fixed top-4 right-4 z-50"></div>
+
+    <script>
+        // Notification system
+        function showNotification(message, type = 'info') {
+            const container = document.getElementById('notification-container');
+            const notification = document.createElement('div');
+            
+            const bgColor = {
+                'success': 'bg-green-500',
+                'error': 'bg-red-500',
+                'info': 'bg-blue-500'
+            }[type] || 'bg-blue-500';
+            
+            notification.className = `${bgColor} text-white px-6 py-3 rounded-lg shadow-lg mb-2 transform translate-x-full transition-transform duration-300`;
+            notification.innerHTML = `
+                <div class="flex items-center">
+                    <i class="fas fa-${type === 'success' ? 'check' : type === 'error' ? 'exclamation-triangle' : 'info'}-circle mr-2"></i>
+                    <span>${message}</span>
+                </div>
+            `;
+            
+            container.appendChild(notification);
+            
+            // Animate in
+            setTimeout(() => {
+                notification.classList.remove('translate-x-full');
+            }, 100);
+            
+            // Remove after 5 seconds
+            setTimeout(() => {
+                notification.classList.add('translate-x-full');
+                setTimeout(() => {
+                    if (notification.parentNode) {
+                        notification.parentNode.removeChild(notification);
+                    }
+                }, 300);
+            }, 5000);
+        }
+
+        // Login form handler
+        document.getElementById('login-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            
+            // Get users from localStorage
+            const users = JSON.parse(localStorage.getItem('sina_users') || '{}');
+            
+            if (users[username] && users[username].password === password) {
+                // Successful login
+                localStorage.setItem('sina_current_user', username);
+                showNotification('Welcome back! Sina is ready to guide you.', 'success');
+                
+                setTimeout(() => {
+                    window.location.href = 'dashboard.html';
+                }, 1500);
+            } else {
+                showNotification('Invalid username or password. Sina values accuracy.', 'error');
+            }
+        });
+
+        // Demo login function
+        function loginDemo() {
+            // Create demo user if doesn't exist
+            const users = JSON.parse(localStorage.getItem('sina_users') || '{}');
+            
+            if (!users['demo']) {
+                users['demo'] = {
+                    password: 'demo123',
+                    email: 'demo@sina.app',
+                    created_at: new Date().toISOString()
+                };
+                localStorage.setItem('sina_users', JSON.stringify(users));
+                
+                // Create demo data
+                createDemoData();
+            }
+            
+            // Login as demo user
+            localStorage.setItem('sina_current_user', 'demo');
+            showNotification('Welcome to Sina! Exploring with demo data.', 'success');
+            
+            setTimeout(() => {
+                window.location.href = 'dashboard.html';
+            }, 1500);
+        }
+
+        // Create demo data
+        function createDemoData() {
+            const demoTasks = [
+                {
+                    id: 1,
+                    title: 'Complete morning workout',
+                    description: 'Start the day with energy and discipline',
+                    priority: 'high',
+                    category: 'health',
+                    completed: true,
+                    created_at: new Date().toISOString(),
+                    deadline: null
+                },
+                {
+                    id: 2,
+                    title: 'Review project proposal',
+                    description: 'Analyze the quarterly business proposal',
+                    priority: 'high',
+                    category: 'work',
+                    completed: false,
+                    created_at: new Date().toISOString(),
+                    deadline: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString()
+                },
+                {
+                    id: 3,
+                    title: 'Read 30 pages of discipline book',
+                    description: 'Continue reading "Atomic Habits"',
+                    priority: 'medium',
+                    category: 'personal',
+                    completed: false,
+                    created_at: new Date().toISOString(),
+                    deadline: null
+                },
+                {
+                    id: 4,
+                    title: 'Plan weekend activities',
+                    description: 'Organize productive weekend schedule',
+                    priority: 'low',
+                    category: 'personal',
+                    completed: false,
+                    created_at: new Date().toISOString(),
+                    deadline: null
+                }
+            ];
+            
+            const demoJournalEntries = [
+                {
+                    id: 1,
+                    content: 'Today I focused on building better morning routines. Sina\'s guidance helped me stay consistent with my workout schedule. Feeling more disciplined already!',
+                    mood: 4,
+                    created_at: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
+                },
+                {
+                    id: 2,
+                    content: 'Had a challenging day at work, but managed to complete all my priority tasks. The Pomodoro technique really works! Sina\'s strict mode kept me accountable.',
+                    mood: 3,
+                    created_at: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString()
+                }
+            ];
+            
+            const demoFocusSessions = [
+                {
+                    id: 1,
+                    task_id: 2,
+                    duration: 25,
+                    completed: true,
+                    notes: 'Deep focus session on project analysis',
+                    created_at: new Date().toISOString()
+                },
+                {
+                    id: 2,
+                    task_id: 1,
+                    duration: 25,
+                    completed: true,
+                    notes: 'Morning workout planning session',
+                    created_at: new Date(Date.now() - 60 * 60 * 1000).toISOString()
+                }
+            ];
+            
+            // Store demo data
+            localStorage.setItem('sina_tasks_demo', JSON.stringify(demoTasks));
+            localStorage.setItem('sina_journal_demo', JSON.stringify(demoJournalEntries));
+            localStorage.setItem('sina_focus_sessions_demo', JSON.stringify(demoFocusSessions));
+            localStorage.setItem('sina_task_counter_demo', '4');
+        }
+
+        // Check if already logged in
+        if (localStorage.getItem('sina_current_user')) {
+            window.location.href = 'dashboard.html';
+        }
+    </script>
+</body>
+</html> 

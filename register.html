@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register - Sina</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .sina-gradient { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+        .sina-card { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); }
+        .sina-shadow { box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04); }
+    </style>
+</head>
+<body class="sina-gradient min-h-screen flex items-center justify-center">
+    <div class="max-w-md w-full mx-4">
+        <div class="sina-card rounded-lg sina-shadow p-8">
+            <!-- Header -->
+            <div class="text-center mb-8">
+                <i class="fas fa-brain text-4xl text-purple-600 mb-4"></i>
+                <h1 class="text-2xl font-bold text-gray-900">Join Sina</h1>
+                <p class="text-gray-600 mt-2">Begin your journey to unshakeable discipline</p>
+            </div>
+
+            <!-- Registration Form -->
+            <form id="register-form" class="space-y-6">
+                <div>
+                    <label for="username" class="block text-sm font-medium text-gray-700 mb-2">
+                        <i class="fas fa-user mr-1"></i>Username
+                    </label>
+                    <input type="text" id="username" name="username" required 
+                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                           placeholder="Choose a username">
+                </div>
+
+                <div>
+                    <label for="email" class="block text-sm font-medium text-gray-700 mb-2">
+                        <i class="fas fa-envelope mr-1"></i>Email
+                    </label>
+                    <input type="email" id="email" name="email" required 
+                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                           placeholder="Enter your email">
+                </div>
+
+                <div>
+                    <label for="password" class="block text-sm font-medium text-gray-700 mb-2">
+                        <i class="fas fa-lock mr-1"></i>Password
+                    </label>
+                    <input type="password" id="password" name="password" required 
+                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                           placeholder="Create a password">
+                    <p class="text-xs text-gray-500 mt-1">Minimum 6 characters</p>
+                </div>
+
+                <div>
+                    <label for="confirm_password" class="block text-sm font-medium text-gray-700 mb-2">
+                        <i class="fas fa-lock mr-1"></i>Confirm Password
+                    </label>
+                    <input type="password" id="confirm_password" name="confirm_password" required 
+                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                           placeholder="Confirm your password">
+                </div>
+
+                <button type="submit" class="w-full sina-gradient text-white py-2 px-4 rounded-md hover:opacity-90 transition-opacity font-medium">
+                    <i class="fas fa-user-plus mr-2"></i>Create Account
+                </button>
+            </form>
+
+            <!-- Divider -->
+            <div class="mt-6 text-center">
+                <span class="text-gray-500">Already have an account?</span>
+                <a href="login.html" class="text-purple-600 hover:text-purple-700 font-medium ml-1">
+                    Sign in here
+                </a>
+            </div>
+
+            <!-- Sina's Welcome Message -->
+            <div class="mt-6 p-4 bg-purple-50 rounded-lg border border-purple-200">
+                <h3 class="text-sm font-medium text-purple-800 mb-2">
+                    <i class="fas fa-quote-left mr-1"></i>Sina's Welcome
+                </h3>
+                <p class="text-xs text-purple-600 italic">
+                    "Welcome to your discipline journey. I'm here to guide you from where you are to where you want to be. 
+                    Together, we'll build habits that last and achieve goals that matter."
+                </p>
+            </div>
+
+            <!-- Back to Home -->
+            <div class="mt-6 text-center">
+                <a href="index.html" class="text-gray-500 hover:text-gray-700 text-sm">
+                    <i class="fas fa-arrow-left mr-1"></i>Back to Home
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification Container -->
+    <div id="notification-container" class="fixed top-4 right-4 z-50"></div>
+
+    <script>
+        // Notification system
+        function showNotification(message, type = 'info') {
+            const container = document.getElementById('notification-container');
+            const notification = document.createElement('div');
+            
+            const bgColor = {
+                'success': 'bg-green-500',
+                'error': 'bg-red-500',
+                'info': 'bg-blue-500'
+            }[type] || 'bg-blue-500';
+            
+            notification.className = `${bgColor} text-white px-6 py-3 rounded-lg shadow-lg mb-2 transform translate-x-full transition-transform duration-300`;
+            notification.innerHTML = `
+                <div class="flex items-center">
+                    <i class="fas fa-${type === 'success' ? 'check' : type === 'error' ? 'exclamation-triangle' : 'info'}-circle mr-2"></i>
+                    <span>${message}</span>
+                </div>
+            `;
+            
+            container.appendChild(notification);
+            
+            // Animate in
+            setTimeout(() => {
+                notification.classList.remove('translate-x-full');
+            }, 100);
+            
+            // Remove after 5 seconds
+            setTimeout(() => {
+                notification.classList.add('translate-x-full');
+                setTimeout(() => {
+                    if (notification.parentNode) {
+                        notification.parentNode.removeChild(notification);
+                    }
+                }, 300);
+            }, 5000);
+        }
+
+        // Registration form handler
+        document.getElementById('register-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const username = document.getElementById('username').value;
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const confirmPassword = document.getElementById('confirm_password').value;
+            
+            // Validation
+            if (password !== confirmPassword) {
+                showNotification('Passwords do not match. Sina values consistency.', 'error');
+                return;
+            }
+            
+            if (password.length < 6) {
+                showNotification('Password must be at least 6 characters. Security matters.', 'error');
+                return;
+            }
+            
+            if (username.length < 3) {
+                showNotification('Username must be at least 3 characters.', 'error');
+                return;
+            }
+            
+            // Check if user already exists
+            const users = JSON.parse(localStorage.getItem('sina_users') || '{}');
+            
+            if (users[username]) {
+                showNotification('Username already exists. Choose a different one.', 'error');
+                return;
+            }
+            
+            // Create new user
+            users[username] = {
+                password: password,
+                email: email,
+                created_at: new Date().toISOString()
+            };
+            
+            localStorage.setItem('sina_users', JSON.stringify(users));
+            
+            // Initialize empty data for new user
+            localStorage.setItem(`sina_tasks_${username}`, JSON.stringify([]));
+            localStorage.setItem(`sina_journal_${username}`, JSON.stringify([]));
+            localStorage.setItem(`sina_focus_sessions_${username}`, JSON.stringify([]));
+            localStorage.setItem(`sina_task_counter_${username}`, '0');
+            
+            // Auto-login the new user
+            localStorage.setItem('sina_current_user', username);
+            
+            showNotification('Account created successfully! Welcome to Sina.', 'success');
+            
+            setTimeout(() => {
+                window.location.href = 'dashboard.html';
+            }, 1500);
+        });
+
+        // Real-time password validation
+        document.getElementById('confirm_password').addEventListener('input', function() {
+            const password = document.getElementById('password').value;
+            const confirmPassword = this.value;
+            
+            if (confirmPassword && password !== confirmPassword) {
+                this.style.borderColor = '#ef4444';
+            } else {
+                this.style.borderColor = '#d1d5db';
+            }
+        });
+
+        // Check if already logged in
+        if (localStorage.getItem('sina_current_user')) {
+            window.location.href = 'dashboard.html';
+        }
+    </script>
+</body>
+</html> 

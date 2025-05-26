@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tasks - Sina</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .sina-gradient { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+        .sina-card { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); }
+        .sina-shadow { box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04); }
+        .fade-in { opacity: 0; transform: translateY(20px); transition: all 0.6s ease; }
+        .fade-in.visible { opacity: 1; transform: translateY(0); }
+        .task-completed { opacity: 0.6; text-decoration: line-through; }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <!-- Navigation -->
+    <nav class="sina-gradient shadow-lg">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <h1 class="text-white text-xl font-bold">
+                            <i class="fas fa-brain mr-2"></i>Sina
+                        </h1>
+                    </div>
+                    <div class="hidden md:ml-6 md:flex md:space-x-8">
+                        <a href="dashboard.html" class="text-white hover:text-gray-200 px-3 py-2 rounded-md text-sm font-medium transition-colors">
+                            <i class="fas fa-tachometer-alt mr-1"></i>Dashboard
+                        </a>
+                        <a href="tasks.html" class="text-white bg-white bg-opacity-20 px-3 py-2 rounded-md text-sm font-medium">
+                            <i class="fas fa-tasks mr-1"></i>Tasks
+                        </a>
+                        <a href="focus.html" class="text-white hover:text-gray-200 px-3 py-2 rounded-md text-sm font-medium transition-colors">
+                            <i class="fas fa-clock mr-1"></i>Focus
+                        </a>
+                        <a href="journal.html" class="text-white hover:text-gray-200 px-3 py-2 rounded-md text-sm font-medium transition-colors">
+                            <i class="fas fa-book mr-1"></i>Journal
+                        </a>
+                        <a href="analytics.html" class="text-white hover:text-gray-200 px-3 py-2 rounded-md text-sm font-medium transition-colors">
+                            <i class="fas fa-chart-line mr-1"></i>Analytics
+                        </a>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <span class="text-white text-sm" id="username-display">Welcome</span>
+                    <button onclick="logout()" class="text-white hover:text-gray-200 px-3 py-2 rounded-md text-sm font-medium transition-colors">
+                        <i class="fas fa-sign-out-alt mr-1"></i>Logout
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+        <!-- Header -->
+        <div class="mb-8 fade-in">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h1 class="text-3xl font-bold text-gray-900">
+                        <i class="fas fa-tasks mr-3 text-purple-600"></i>Task Management
+                    </h1>
+                    <p class="text-gray-600 mt-2">Organize, prioritize, and conquer your goals with Sina's guidance</p>
+                </div>
+                <button data-action="add-task" class="bg-purple-600 text-white px-6 py-3 rounded-lg hover:bg-purple-700 transition-colors font-medium">
+                    <i class="fas fa-plus mr-2"></i>Add New Task
+                </button>
+            </div>
+        </div>
+
+        <!-- Filters and Search -->
+        <div class="mb-6 fade-in">
+            <div class="bg-white rounded-lg sina-shadow p-6">
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <!-- Search -->
+                    <div class="md:col-span-2">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Search Tasks</label>
+                        <input type="text" id="search-input" placeholder="Search by title or description..."
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-purple-500 focus:border-purple-500">
+                    </div>
+                    
+                    <!-- Priority Filter -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Priority</label>
+                        <select id="priority-filter" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-purple-500 focus:border-purple-500">
+                            <option value="">All Priorities</option>
+                            <option value="high">High</option>
+                            <option value="medium">Medium</option>
+                            <option value="low">Low</option>
+                        </select>
+                    </div>
+                    
+                    <!-- Category Filter -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Category</label>
+                        <select id="category-filter" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-purple-500 focus:border-purple-500">
+                            <option value="">All Categories</option>
+                            <option value="personal">Personal</option>
+                            <option value="work">Work</option>
+                            <option value="study">Study</option>
+                            <option value="health">Health</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <!-- Status Filters -->
+                <div class="mt-4 flex space-x-4">
+                    <button id="filter-all" class="filter-btn active px-4 py-2 rounded-md text-sm font-medium bg-purple-600 text-white">
+                        All Tasks
+                    </button>
+                    <button id="filter-pending" class="filter-btn px-4 py-2 rounded-md text-sm font-medium bg-gray-200 text-gray-700 hover:bg-gray-300">
+                        Pending
+                    </button>
+                    <button id="filter-completed" class="filter-btn px-4 py-2 rounded-md text-sm font-medium bg-gray-200 text-gray-700 hover:bg-gray-300">
+                        Completed
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tasks List -->
+        <div class="fade-in">
+            <div class="bg-white rounded-lg sina-shadow">
+                <div class="p-6 border-b border-gray-200">
+                    <h2 class="text-lg font-semibold text-gray-900">Your Tasks</h2>
+                    <p class="text-sm text-gray-600 mt-1" id="task-count">Loading tasks...</p>
+                </div>
+                
+                <div id="tasks-container" class="divide-y divide-gray-200">
+                    <!-- Tasks will be loaded here -->
+                    <div class="p-8 text-center text-gray-500" id="no-tasks-message">
+                        <i class="fas fa-clipboard-list text-4xl mb-4 opacity-50"></i>
+                        <p class="text-lg font-medium">No tasks found</p>
+                        <p class="text-sm">Create your first task to start building discipline!</p>
+                        <button data-action="add-task" class="mt-4 bg-purple-600 text-white px-6 py-2 rounded-md hover:bg-purple-700 transition-colors">
+                            <i class="fas fa-plus mr-2"></i>Add Your First Task
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Notification Container -->
+    <div id="notification-container" class="fixed top-4 right-4 z-50"></div>
+
+    <!-- JavaScript -->
+    <script src="js/sina-app.js"></script>
+    <script>
+        let allTasks = [];
+        let filteredTasks = [];
+        let currentFilter = 'all';
+
+        function logout() {
+            localStorage.removeItem('sina_current_user');
+            window.location.href = 'index.html';
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const currentUser = localStorage.getItem('sina_current_user');
+            if (!currentUser) {
+                window.location.href = 'login.html';
+                return;
+            }
+
+            // Update username display
+            document.getElementById('username-display').textContent = `Welcome, ${currentUser}`;
+
+            // Load tasks
+            loadTasks();
+            
+            // Setup event listeners
+            setupEventListeners();
+
+            // Animate elements
+            setTimeout(() => {
+                document.querySelectorAll('.fade-in').forEach((el, index) => {
+                    setTimeout(() => {
+                        el.classList.add('visible');
+                    }, index * 100);
+                });
+            }, 100);
+        });
+
+        function setupEventListeners() {
+            // Search input
+            document.getElementById('search-input').addEventListener('input', filterTasks);
+            
+            // Filter dropdowns
+            document.getElementById('priority-filter').addEventListener('change', filterTasks);
+            document.getElementById('category-filter').addEventListener('change', filterTasks);
+            
+            // Status filter buttons
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    // Update active button
+                    document.querySelectorAll('.filter-btn').forEach(b => {
+                        b.classList.remove('active', 'bg-purple-600', 'text-white');
+                        b.classList.add('bg-gray-200', 'text-gray-700');
+                    });
+                    this.classList.add('active', 'bg-purple-600', 'text-white');
+                    this.classList.remove('bg-gray-200', 'text-gray-700');
+                    
+                    // Set current filter
+                    currentFilter = this.id.replace('filter-', '');
+                    filterTasks();
+                });
+            });
+        }
+
+        function loadTasks() {
+            const currentUser = localStorage.getItem('sina_current_user');
+            allTasks = JSON.parse(localStorage.getItem(`sina_tasks_${currentUser}`) || '[]');
+            
+            // Sort tasks by created date (newest first)
+            allTasks.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+            
+            filterTasks();
+        }
+
+        function filterTasks() {
+            const searchTerm = document.getElementById('search-input').value.toLowerCase();
+            const priorityFilter = document.getElementById('priority-filter').value;
+            const categoryFilter = document.getElementById('category-filter').value;
+            
+            filteredTasks = allTasks.filter(task => {
+                // Search filter
+                const matchesSearch = task.title.toLowerCase().includes(searchTerm) || 
+                                    (task.description && task.description.toLowerCase().includes(searchTerm));
+                
+                // Priority filter
+                const matchesPriority = !priorityFilter || task.priority === priorityFilter;
+                
+                // Category filter
+                const matchesCategory = !categoryFilter || task.category === categoryFilter;
+                
+                // Status filter
+                let matchesStatus = true;
+                if (currentFilter === 'pending') {
+                    matchesStatus = !task.completed;
+                } else if (currentFilter === 'completed') {
+                    matchesStatus = task.completed;
+                }
+                
+                return matchesSearch && matchesPriority && matchesCategory && matchesStatus;
+            });
+            
+            renderTasks();
+        }
+
+        function renderTasks() {
+            const container = document.getElementById('tasks-container');
+            const noTasksMessage = document.getElementById('no-tasks-message');
+            const taskCount = document.getElementById('task-count');
+            
+            // Update task count
+            const totalTasks = allTasks.length;
+            const completedTasks = allTasks.filter(t => t.completed).length;
+            taskCount.textContent = `${filteredTasks.length} of ${totalTasks} tasks (${completedTasks} completed)`;
+            
+            if (filteredTasks.length === 0) {
+                noTasksMessage.style.display = 'block';
+                return;
+            }
+            
+            noTasksMessage.style.display = 'none';
+            
+            const tasksHTML = filteredTasks.map(task => `
+                <div class="task-row p-6 ${task.completed ? 'task-completed bg-gray-50' : 'hover:bg-gray-50'} transition-colors">
+                    <div class="flex items-start justify-between">
+                        <div class="flex items-start space-x-4 flex-1">
+                            <input type="checkbox" class="task-checkbox mt-1 h-5 w-5 text-purple-600 rounded focus:ring-purple-500" 
+                                   data-task-id="${task.id}" ${task.completed ? 'checked' : ''}>
+                            <div class="flex-1">
+                                <div class="flex items-center space-x-3 mb-2">
+                                    <h3 class="text-lg font-medium text-gray-900">${task.title}</h3>
+                                    <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium
+                                        ${task.priority === 'high' ? 'bg-red-100 text-red-800' : 
+                                          task.priority === 'medium' ? 'bg-yellow-100 text-yellow-800' : 
+                                          'bg-green-100 text-green-800'}">
+                                        <i class="fas fa-${task.priority === 'high' ? 'exclamation' : task.priority === 'medium' ? 'minus' : 'arrow-down'} mr-1"></i>
+                                        ${task.priority}
+                                    </span>
+                                    <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                                        <i class="fas fa-${task.category === 'work' ? 'briefcase' : task.category === 'health' ? 'heart' : task.category === 'study' ? 'book' : 'user'} mr-1"></i>
+                                        ${task.category}
+                                    </span>
+                                </div>
+                                
+                                ${task.description ? `<p class="text-gray-600 mb-3">${task.description}</p>` : ''}
+                                
+                                <div class="flex items-center space-x-4 text-sm text-gray-500">
+                                    <span>
+                                        <i class="fas fa-calendar mr-1"></i>
+                                        Created: ${new Date(task.created_at).toLocaleDateString()}
+                                    </span>
+                                    ${task.deadline ? `
+                                        <span class="${new Date(task.deadline) < new Date() ? 'text-red-600' : 'text-gray-500'}">
+                                            <i class="fas fa-clock mr-1"></i>
+                                            Due: ${new Date(task.deadline).toLocaleDateString()}
+                                        </span>
+                                    ` : ''}
+                                    ${task.completed ? `
+                                        <span class="text-green-600">
+                                            <i class="fas fa-check mr-1"></i>
+                                            Completed: ${new Date(task.completed_at).toLocaleDateString()}
+                                        </span>
+                                    ` : ''}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="flex items-center space-x-2 ml-4">
+                            ${!task.completed ? `
+                                <button class="start-focus-btn text-blue-600 hover:text-blue-800 p-2 rounded-md hover:bg-blue-50" 
+                                        data-task-id="${task.id}" data-task-title="${task.title}" title="Start Focus Session">
+                                    <i class="fas fa-play"></i>
+                                </button>
+                            ` : ''}
+                            <button class="edit-task-btn text-gray-600 hover:text-gray-800 p-2 rounded-md hover:bg-gray-100" 
+                                    data-task-id="${task.id}" title="Edit Task">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button class="delete-task-btn text-red-600 hover:text-red-800 p-2 rounded-md hover:bg-red-50" 
+                                    data-task-id="${task.id}" title="Delete Task">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+            
+            container.innerHTML = tasksHTML;
+            
+            // Re-attach event listeners
+            if (window.sinaApp) {
+                window.sinaApp.setupTaskHandlers();
+            }
+        }
+
+        // Refresh tasks when returning from other pages
+        window.addEventListener('focus', function() {
+            loadTasks();
+        });
+    </script>
+</body>
+</html> 

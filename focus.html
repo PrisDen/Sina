@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Focus Session - Sina</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .sina-gradient { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+        .sina-card { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); }
+        .sina-shadow { box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04); }
+        .fade-in { opacity: 0; transform: translateY(20px); transition: all 0.6s ease; }
+        .fade-in.visible { opacity: 1; transform: translateY(0); }
+        .timer-display { font-size: 4rem; font-weight: bold; font-family: 'Courier New', monospace; }
+        .timer-circle { 
+            width: 300px; 
+            height: 300px; 
+            border: 8px solid #e5e7eb; 
+            border-radius: 50%; 
+            position: relative;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .timer-progress {
+            position: absolute;
+            top: -8px;
+            left: -8px;
+            width: 300px;
+            height: 300px;
+            border-radius: 50%;
+            border: 8px solid transparent;
+            border-top: 8px solid #10b981;
+            transform: rotate(-90deg);
+            transition: transform 1s linear;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <!-- Navigation -->
+    <nav class="sina-gradient shadow-lg">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <h1 class="text-white text-xl font-bold">
+                            <i class="fas fa-brain mr-2"></i>Sina
+                        </h1>
+                    </div>
+                    <div class="hidden md:ml-6 md:flex md:space-x-8">
+                        <a href="dashboard.html" class="text-white hover:text-gray-200 px-3 py-2 rounded-md text-sm font-medium transition-colors">
+                            <i class="fas fa-tachometer-alt mr-1"></i>Dashboard
+                        </a>
+                        <a href="tasks.html" class="text-white hover:text-gray-200 px-3 py-2 rounded-md text-sm font-medium transition-colors">
+                            <i class="fas fa-tasks mr-1"></i>Tasks
+                        </a>
+                        <a href="focus.html" class="text-white bg-white bg-opacity-20 px-3 py-2 rounded-md text-sm font-medium">
+                            <i class="fas fa-clock mr-1"></i>Focus
+                        </a>
+                        <a href="journal.html" class="text-white hover:text-gray-200 px-3 py-2 rounded-md text-sm font-medium transition-colors">
+                            <i class="fas fa-book mr-1"></i>Journal
+                        </a>
+                        <a href="analytics.html" class="text-white hover:text-gray-200 px-3 py-2 rounded-md text-sm font-medium transition-colors">
+                            <i class="fas fa-chart-line mr-1"></i>Analytics
+                        </a>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <span class="text-white text-sm" id="username-display">Welcome</span>
+                    <button onclick="logout()" class="text-white hover:text-gray-200 px-3 py-2 rounded-md text-sm font-medium transition-colors">
+                        <i class="fas fa-sign-out-alt mr-1"></i>Logout
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="max-w-4xl mx-auto py-6 sm:px-6 lg:px-8">
+        <!-- Header -->
+        <div class="mb-8 fade-in text-center">
+            <h1 class="text-3xl font-bold text-gray-900 mb-2">
+                <i class="fas fa-clock mr-3 text-purple-600"></i>Focus Session
+            </h1>
+            <p class="text-gray-600">Deep work with the Pomodoro Technique - 25 minutes of focused work, 5 minutes of rest</p>
+        </div>
+
+        <!-- Timer Section -->
+        <div class="mb-8 fade-in">
+            <div class="bg-white rounded-lg sina-shadow p-8 text-center">
+                <!-- Current Task Display -->
+                <div id="current-task-display" class="mb-6" style="display: none;">
+                    <p class="text-sm text-gray-600 mb-2">Working on:</p>
+                    <h3 class="text-lg font-semibold text-gray-900" id="current-task-title"></h3>
+                </div>
+
+                <!-- Timer Circle -->
+                <div class="flex justify-center mb-8">
+                    <div class="timer-circle flex items-center justify-center">
+                        <div class="timer-progress" id="timer-progress"></div>
+                        <div class="text-center text-white">
+                            <div class="timer-display" data-element="timer-display">25:00</div>
+                            <p class="text-sm opacity-80" id="timer-status">Ready to Focus</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Timer Controls -->
+                <div class="flex justify-center space-x-4 mb-6">
+                    <button id="start-timer" class="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition-colors font-medium">
+                        <i class="fas fa-play mr-2"></i>Start Focus
+                    </button>
+                    <button id="pause-timer" class="bg-yellow-600 text-white px-6 py-3 rounded-lg hover:bg-yellow-700 transition-colors font-medium" style="display: none;">
+                        <i class="fas fa-pause mr-2"></i>Pause
+                    </button>
+                    <button id="reset-timer" class="bg-gray-600 text-white px-6 py-3 rounded-lg hover:bg-gray-700 transition-colors font-medium">
+                        <i class="fas fa-redo mr-2"></i>Reset
+                    </button>
+                </div>
+
+                <!-- Session Notes -->
+                <div class="max-w-md mx-auto">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Session Notes (optional)</label>
+                    <textarea id="session-notes" rows="3" 
+                              class="w-full p-3 border border-gray-300 rounded-md focus:ring-purple-500 focus:border-purple-500 resize-none"
+                              placeholder="What did you accomplish in this session?"></textarea>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Task Selection -->
+        <div class="mb-8 fade-in">
+            <div class="bg-white rounded-lg sina-shadow p-6">
+                <h2 class="text-lg font-semibold text-gray-900 mb-4">
+                    <i class="fas fa-list mr-2 text-purple-600"></i>Quick Task Selection
+                </h2>
+                <p class="text-gray-600 mb-4">Choose a task to focus on during your session</p>
+                
+                <div id="task-selection" class="space-y-3">
+                    <!-- Tasks will be loaded here -->
+                    <div class="text-center py-4 text-gray-500" id="no-tasks-available">
+                        <i class="fas fa-clipboard-list text-2xl mb-2 opacity-50"></i>
+                        <p>No pending tasks available</p>
+                        <a href="tasks.html" class="text-purple-600 hover:text-purple-700 font-medium">
+                            <i class="fas fa-plus mr-1"></i>Create a task first
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Sessions -->
+        <div class="fade-in">
+            <div class="bg-white rounded-lg sina-shadow p-6">
+                <h2 class="text-lg font-semibold text-gray-900 mb-4">
+                    <i class="fas fa-history mr-2 text-gray-600"></i>Recent Focus Sessions
+                </h2>
+                
+                <div id="recent-sessions" class="space-y-3">
+                    <!-- Recent sessions will be loaded here -->
+                    <div class="text-center py-4 text-gray-500" id="no-sessions">
+                        <i class="fas fa-clock text-2xl mb-2 opacity-50"></i>
+                        <p>No focus sessions yet</p>
+                        <p class="text-sm">Start your first session to build momentum!</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Notification Container -->
+    <div id="notification-container" class="fixed top-4 right-4 z-50"></div>
+
+    <!-- JavaScript -->
+    <script src="js/sina-app.js"></script>
+    <script>
+        let currentTaskId = null;
+        let currentTaskTitle = '';
+
+        function logout() {
+            localStorage.removeItem('sina_current_user');
+            window.location.href = 'index.html';
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const currentUser = localStorage.getItem('sina_current_user');
+            if (!currentUser) {
+                window.location.href = 'login.html';
+                return;
+            }
+
+            // Update username display
+            document.getElementById('username-display').textContent = `Welcome, ${currentUser}`;
+
+            // Load available tasks
+            loadAvailableTasks();
+            
+            // Load recent sessions
+            loadRecentSessions();
+
+            // Setup timer event listeners
+            setupTimerControls();
+
+            // Animate elements
+            setTimeout(() => {
+                document.querySelectorAll('.fade-in').forEach((el, index) => {
+                    setTimeout(() => {
+                        el.classList.add('visible');
+                    }, index * 100);
+                });
+            }, 100);
+        });
+
+        function setupTimerControls() {
+            const startBtn = document.getElementById('start-timer');
+            const pauseBtn = document.getElementById('pause-timer');
+            const resetBtn = document.getElementById('reset-timer');
+
+            startBtn.addEventListener('click', function() {
+                if (window.sinaApp && window.sinaApp.timer) {
+                    window.sinaApp.timer.start();
+                    updateTimerUI('running');
+                }
+            });
+
+            pauseBtn.addEventListener('click', function() {
+                if (window.sinaApp && window.sinaApp.timer) {
+                    window.sinaApp.timer.pause();
+                    updateTimerUI('paused');
+                }
+            });
+
+            resetBtn.addEventListener('click', function() {
+                if (window.sinaApp && window.sinaApp.timer) {
+                    window.sinaApp.timer.reset();
+                    updateTimerUI('stopped');
+                    clearCurrentTask();
+                }
+            });
+        }
+
+        function updateTimerUI(state) {
+            const startBtn = document.getElementById('start-timer');
+            const pauseBtn = document.getElementById('pause-timer');
+            const resetBtn = document.getElementById('reset-timer');
+            const status = document.getElementById('timer-status');
+
+            switch(state) {
+                case 'running':
+                    startBtn.style.display = 'none';
+                    pauseBtn.style.display = 'inline-block';
+                    resetBtn.disabled = false;
+                    status.textContent = 'Focus Time!';
+                    break;
+                case 'paused':
+                    startBtn.style.display = 'inline-block';
+                    pauseBtn.style.display = 'none';
+                    resetBtn.disabled = false;
+                    status.textContent = 'Paused';
+                    break;
+                case 'stopped':
+                    startBtn.style.display = 'inline-block';
+                    pauseBtn.style.display = 'none';
+                    resetBtn.disabled = false;
+                    status.textContent = 'Ready to Focus';
+                    break;
+                case 'completed':
+                    startBtn.style.display = 'inline-block';
+                    pauseBtn.style.display = 'none';
+                    resetBtn.disabled = false;
+                    status.textContent = 'Session Complete!';
+                    break;
+            }
+        }
+
+        function loadAvailableTasks() {
+            const currentUser = localStorage.getItem('sina_current_user');
+            const tasks = JSON.parse(localStorage.getItem(`sina_tasks_${currentUser}`) || '[]');
+            const pendingTasks = tasks.filter(task => !task.completed);
+            
+            const container = document.getElementById('task-selection');
+            const noTasksMessage = document.getElementById('no-tasks-available');
+            
+            if (pendingTasks.length === 0) {
+                noTasksMessage.style.display = 'block';
+                return;
+            }
+            
+            noTasksMessage.style.display = 'none';
+            
+            const tasksHTML = pendingTasks.slice(0, 5).map(task => `
+                <div class="task-option flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors"
+                     onclick="selectTask(${task.id}, '${task.title.replace(/'/g, "\\'")}')">
+                    <div class="flex items-center space-x-3">
+                        <div>
+                            <h4 class="font-medium text-gray-900">${task.title}</h4>
+                            ${task.description ? `<p class="text-sm text-gray-600">${task.description}</p>` : ''}
+                            <div class="flex items-center space-x-2 mt-1">
+                                <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium
+                                    ${task.priority === 'high' ? 'bg-red-100 text-red-800' : 
+                                      task.priority === 'medium' ? 'bg-yellow-100 text-yellow-800' : 
+                                      'bg-green-100 text-green-800'}">
+                                    ${task.priority}
+                                </span>
+                                <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                                    ${task.category}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="text-purple-600">
+                        <i class="fas fa-play"></i>
+                    </div>
+                </div>
+            `).join('');
+            
+            container.innerHTML = tasksHTML;
+        }
+
+        function selectTask(taskId, taskTitle) {
+            currentTaskId = taskId;
+            currentTaskTitle = taskTitle;
+            
+            // Update UI to show selected task
+            document.getElementById('current-task-display').style.display = 'block';
+            document.getElementById('current-task-title').textContent = taskTitle;
+            
+            // Set task context in timer
+            if (window.sinaApp && window.sinaApp.timer) {
+                window.sinaApp.timer.setTaskContext(taskId, taskTitle);
+            }
+            
+            // Highlight selected task
+            document.querySelectorAll('.task-option').forEach(option => {
+                option.classList.remove('bg-purple-50', 'border-purple-300');
+                option.classList.add('border-gray-200');
+            });
+            
+            event.currentTarget.classList.add('bg-purple-50', 'border-purple-300');
+            event.currentTarget.classList.remove('border-gray-200');
+            
+            // Show notification
+            if (window.sinaApp) {
+                window.sinaApp.notifications.show(`Selected task: ${taskTitle}`, 'info');
+            }
+        }
+
+        function clearCurrentTask() {
+            currentTaskId = null;
+            currentTaskTitle = '';
+            document.getElementById('current-task-display').style.display = 'none';
+            
+            // Clear task selection highlighting
+            document.querySelectorAll('.task-option').forEach(option => {
+                option.classList.remove('bg-purple-50', 'border-purple-300');
+                option.classList.add('border-gray-200');
+            });
+        }
+
+        function loadRecentSessions() {
+            const currentUser = localStorage.getItem('sina_current_user');
+            const sessions = JSON.parse(localStorage.getItem(`sina_focus_sessions_${currentUser}`) || '[]');
+            const tasks = JSON.parse(localStorage.getItem(`sina_tasks_${currentUser}`) || '[]');
+            
+            const container = document.getElementById('recent-sessions');
+            const noSessionsMessage = document.getElementById('no-sessions');
+            
+            if (sessions.length === 0) {
+                noSessionsMessage.style.display = 'block';
+                return;
+            }
+            
+            noSessionsMessage.style.display = 'none';
+            
+            const recentSessions = sessions.slice(0, 5);
+            const sessionsHTML = recentSessions.map(session => {
+                const task = tasks.find(t => t.id === session.task_id);
+                const taskTitle = task ? task.title : 'Unknown Task';
+                
+                return `
+                    <div class="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
+                        <div class="flex items-center space-x-3">
+                            <div class="flex-shrink-0">
+                                <i class="fas fa-clock text-blue-600"></i>
+                            </div>
+                            <div>
+                                <h4 class="font-medium text-gray-900">${taskTitle}</h4>
+                                <p class="text-sm text-gray-600">
+                                    ${session.duration} minutes • ${new Date(session.created_at).toLocaleDateString()}
+                                </p>
+                                ${session.notes ? `<p class="text-sm text-gray-500 mt-1">${session.notes}</p>` : ''}
+                            </div>
+                        </div>
+                        <div class="text-green-600">
+                            <i class="fas fa-check-circle"></i>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            
+            container.innerHTML = sessionsHTML;
+        }
+
+        // Update progress circle based on timer
+        function updateTimerProgress(timeLeft, totalTime) {
+            const progress = document.getElementById('timer-progress');
+            const percentage = ((totalTime - timeLeft) / totalTime) * 100;
+            const degrees = (percentage / 100) * 360;
+            progress.style.transform = `rotate(${degrees - 90}deg)`;
+        }
+
+        // Listen for timer updates from the main app
+        document.addEventListener('timerUpdate', function(event) {
+            const { timeLeft, totalTime, state } = event.detail;
+            updateTimerProgress(timeLeft, totalTime);
+            updateTimerUI(state);
+        });
+
+        // Handle session completion
+        document.addEventListener('sessionComplete', function(event) {
+            const notes = document.getElementById('session-notes').value;
+            
+            // Save session with notes
+            if (currentTaskId && window.sinaApp) {
+                window.sinaApp.logFocusSession(currentTaskId, 25, notes);
+            }
+            
+            // Clear notes and task selection
+            document.getElementById('session-notes').value = '';
+            clearCurrentTask();
+            
+            // Reload recent sessions
+            setTimeout(() => {
+                loadRecentSessions();
+            }, 1000);
+            
+            updateTimerUI('completed');
+        });
+
+        // Refresh data when returning from other pages
+        window.addEventListener('focus', function() {
+            loadAvailableTasks();
+            loadRecentSessions();
+        });
+    </script>
+</body>
+</html> 
