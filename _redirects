@@ -1,0 +1,13 @@
+# Sina - Netlify Redirects
+# Clean URLs without .html extension
+
+/dashboard    /dashboard.html    200
+/tasks        /tasks.html        200
+/focus        /focus.html        200
+/journal      /journal.html      200
+/analytics    /analytics.html    200
+/login        /login.html        200
+/register     /register.html     200
+
+# Fallback for SPA-like behavior
+/*            /index.html        200 

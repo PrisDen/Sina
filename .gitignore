@@ -76,4 +76,22 @@ logs/
 node_modules/
 npm-debug.log*
 yarn-debug.log*
-yarn-error.log* 
+yarn-error.log*
+
+# Netlify
+.netlify/
+dist/
+build/
+
+# User data (should never be committed - stays in browser localStorage)
+localStorage/
+user-data/
+sina-data/
+*.json
+!package.json
+!package-lock.json
+!netlify.toml
+
+# Backup files
+*.bak
+*.backup 
