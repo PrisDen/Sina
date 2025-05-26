@@ -10,20 +10,33 @@ class SinaApp {
     }
 
     init() {
-        if (!this.currentUser) {
-            // Redirect to login if not authenticated
-            if (!window.location.pathname.includes('login.html') && 
-                !window.location.pathname.includes('register.html') && 
-                !window.location.pathname.includes('index.html')) {
-                window.location.href = 'login.html';
-                return;
-            }
-        }
+        try {
+            console.log('Sina App initializing...', {
+                currentUser: this.currentUser,
+                pathname: window.location.pathname
+            });
 
-        this.setupEventListeners();
-        this.loadUserData();
-        this.updateUI();
-        this.startPeriodicUpdates();
+            if (!this.currentUser) {
+                // Redirect to login if not authenticated
+                if (!window.location.pathname.includes('login.html') && 
+                    !window.location.pathname.includes('register.html') && 
+                    !window.location.pathname.includes('index.html')) {
+                    console.log('No user logged in, redirecting to login');
+                    window.location.href = 'login.html';
+                    return;
+                }
+            }
+
+            this.setupEventListeners();
+            this.loadUserData();
+            this.updateUI();
+            this.startPeriodicUpdates();
+            
+            console.log('Sina App initialized successfully');
+        } catch (error) {
+            console.error('Error initializing Sina App:', error);
+            this.notifications.show('Error loading application. Please refresh the page.', 'error');
+        }
     }
 
     setupEventListeners() {
@@ -118,6 +131,79 @@ class SinaApp {
         this.tasks = this.getTasks();
         this.journalEntries = this.getJournalEntries();
         this.focusSessions = this.getFocusSessions();
+        
+        // Initialize demo data if demo user and no data exists
+        if (this.currentUser === 'demo' && this.tasks.length === 0) {
+            this.initializeDemoData();
+        }
+    }
+
+    initializeDemoData() {
+        console.log('Initializing demo data...');
+        
+        // Demo tasks
+        const demoTasks = [
+            {
+                id: 1,
+                title: "Complete morning workout",
+                description: "30-minute cardio session",
+                priority: "high",
+                category: "health",
+                completed: true,
+                created_at: new Date().toISOString(),
+                completed_at: new Date().toISOString()
+            },
+            {
+                id: 2,
+                title: "Review project proposal",
+                description: "Go through the Q4 project proposal and provide feedback",
+                priority: "high",
+                category: "work",
+                completed: false,
+                created_at: new Date().toISOString(),
+                deadline: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString()
+            },
+            {
+                id: 3,
+                title: "Read 20 pages of book",
+                description: "Continue reading 'Atomic Habits'",
+                priority: "medium",
+                category: "personal",
+                completed: false,
+                created_at: new Date().toISOString()
+            }
+        ];
+        
+        // Demo journal entries
+        const demoJournal = [
+            {
+                id: Date.now(),
+                content: "Started using Sina today. Feeling motivated to build better discipline habits. The interface is clean and the focus timer seems helpful.",
+                mood: 4,
+                created_at: new Date().toISOString()
+            }
+        ];
+        
+        // Demo focus sessions
+        const demoSessions = [
+            {
+                id: Date.now(),
+                task_id: 1,
+                duration: 25,
+                completed: true,
+                notes: "Great focused session on workout planning",
+                created_at: new Date(Date.now() - 60 * 60 * 1000).toISOString()
+            }
+        ];
+        
+        this.saveTasks(demoTasks);
+        this.saveJournalEntries(demoJournal);
+        this.saveFocusSessions(demoSessions);
+        
+        // Set task counter
+        localStorage.setItem('sina_task_counter_demo', '3');
+        
+        console.log('Demo data initialized');
     }
 
     getTasks() {
@@ -549,6 +635,21 @@ class SinaApp {
         }
     }
 
+    renderTasksPage() {
+        // Placeholder for tasks page rendering
+        console.log('Tasks page rendering - implement based on HTML structure');
+    }
+
+    renderDashboardTasks() {
+        // Placeholder for dashboard tasks rendering
+        console.log('Dashboard tasks rendering - implement based on HTML structure');
+    }
+
+    renderJournalPage() {
+        // Placeholder for journal page rendering
+        console.log('Journal page rendering - implement based on HTML structure');
+    }
+
     // Utility Methods
     logout() {
         localStorage.removeItem('sina_current_user');
@@ -728,8 +829,79 @@ class NotificationSystem {
     }
 }
 
+// Authentication functions
+function handleLogin(event) {
+    event.preventDefault();
+    const form = event.target;
+    const username = form.username.value;
+    const password = form.password.value;
+    
+    console.log('Login attempt:', { username });
+    
+    // Demo account
+    if (username === 'demo' && password === 'demo123') {
+        localStorage.setItem('sina_current_user', 'demo');
+        window.location.href = 'dashboard.html';
+        return;
+    }
+    
+    // Check if user exists
+    const users = JSON.parse(localStorage.getItem('sina_users') || '{}');
+    if (users[username] && users[username].password === password) {
+        localStorage.setItem('sina_current_user', username);
+        window.location.href = 'dashboard.html';
+    } else {
+        alert('Invalid username or password');
+    }
+}
+
+function handleRegister(event) {
+    event.preventDefault();
+    const form = event.target;
+    const username = form.username.value;
+    const password = form.password.value;
+    const confirmPassword = form.confirmPassword?.value;
+    
+    console.log('Register attempt:', { username });
+    
+    if (password !== confirmPassword) {
+        alert('Passwords do not match');
+        return;
+    }
+    
+    if (password.length < 6) {
+        alert('Password must be at least 6 characters');
+        return;
+    }
+    
+    const users = JSON.parse(localStorage.getItem('sina_users') || '{}');
+    if (users[username]) {
+        alert('Username already exists');
+        return;
+    }
+    
+    users[username] = { password: password, created_at: new Date().toISOString() };
+    localStorage.setItem('sina_users', JSON.stringify(users));
+    localStorage.setItem('sina_current_user', username);
+    
+    window.location.href = 'dashboard.html';
+}
+
 // Initialize the app when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
+    // Setup authentication forms
+    const loginForm = document.querySelector('#login-form');
+    const registerForm = document.querySelector('#register-form');
+    
+    if (loginForm) {
+        loginForm.addEventListener('submit', handleLogin);
+    }
+    
+    if (registerForm) {
+        registerForm.addEventListener('submit', handleRegister);
+    }
+    
+    // Initialize main app
     window.sinaApp = new SinaApp();
 });
 
