@@ -1,9 +1,13 @@
 [build]
-  # No build command needed for static site
+  # Static site - no build process required
+  command = ""
   publish = "."
-  
+  # Skip dependency installation completely
+  ignore = "/bin/false"
+
 [build.environment]
-  NODE_VERSION = "18"
+  # No environment needed for static site
+  SKIP_DEPENDENCY_INSTALL = "true"
 
 # Redirect rules for SPA-like behavior
 [[redirects]]
